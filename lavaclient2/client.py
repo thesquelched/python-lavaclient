@@ -11,7 +11,6 @@
 # under the License.
 
 import logging
-import six
 from keystoneclient import exceptions as ks_error
 
 from lavaclient2 import keystone
@@ -51,9 +50,8 @@ class Lava(object):
         if username is None:
             raise error.InvalidError("Missing username")
 
-        if not (isinstance(region, six.string_types)
-                and region.upper() in constants.REGIONS):
-            raise error.InvalidError("Invalid region: '{0}'".format(region))
+        if region is None:
+            raise error.InvalidError('Missing region')
 
         if auth_url is None:
             auth_url = constants.DEFAULT_AUTH_URL
@@ -63,8 +61,17 @@ class Lava(object):
                                        region,
                                        username,
                                        tenant_id)
-        self._endpoint = self._auth.service_catalog.url_for(
-            service_type=constants.CBD_SERVICE_TYPE)
+        self._endpoint = self._get_endpoint(region)
+
+    def _get_endpoint(self, region):
+        try:
+            return self._auth.service_catalog.url_for(
+                service_type=constants.CBD_SERVICE_TYPE,
+                region_name=region)
+        except ks_error.EndpointNotFound as exc:
+            LOG.critical('Error getting endpoint: {0}'.format(exc),
+                         exc_info=exc)
+            raise error.InvalidError(str(exc))
 
     def authenticate(self, auth_url, api_key, region, username, tenant_id):
         """Return keystone authentication client"""
