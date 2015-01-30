@@ -17,6 +17,7 @@ from keystoneclient import exceptions
 
 from lavaclient2.client import Lava
 from lavaclient2 import error
+from lavaclient2 import constants
 
 
 @pytest.fixture
@@ -70,7 +71,7 @@ def test_auth_client(post, auth_response):
     post.return_value = MagicMock(
         json=MagicMock(return_value=auth_response)
     )
-    client = Lava('apikey', 'username')
+    client = Lava('apikey', 'username', constants.REGION_DFW)
 
     assert post.call_count == 1
     assert client.token == 'ab48a9efdfedb23ty3494'
@@ -78,18 +79,24 @@ def test_auth_client(post, auth_response):
 
 
 def test_auth_errors():
-    pytest.raises(ValueError, Lava, None, 'username')
-    pytest.raises(ValueError, Lava, 'apikey', None)
-    pytest.raises(ValueError, Lava, None, None)
+    pytest.raises(error.InvalidError, Lava, None, 'username',
+                  constants.REGION_DFW)
+    pytest.raises(error.InvalidError, Lava, 'apikey', None,
+                  constants.REGION_DFW)
+    pytest.raises(error.InvalidError, Lava, 'apikey', 'username', None)
+    pytest.raises(error.InvalidError, Lava, None, None, constants.REGION_DFW)
 
     with patch('keystoneclient.session.Session.post') as post:
         post.return_value = MagicMock(status_code=400)
-        pytest.raises(error.AuthenticationError, Lava, 'apikey', 'username')
+        pytest.raises(error.AuthenticationError, Lava, 'apikey', 'username',
+                      constants.REGION_DFW)
 
     with patch('keystoneclient.session.Session.post') as post:
         post.side_effect = exceptions.Unauthorized
-        pytest.raises(error.AuthenticationError, Lava, 'apikey', 'username')
+        pytest.raises(error.AuthorizationError, Lava, 'apikey', 'username',
+                      constants.REGION_DFW)
 
     with patch('keystoneclient.session.Session.post') as post:
         post.side_effect = exceptions.EndpointNotFound
-        pytest.raises(error.AuthenticationError, Lava, 'apikey', 'username')
+        pytest.raises(error.AuthenticationError, Lava, 'apikey', 'username',
+                      constants.REGION_DFW)

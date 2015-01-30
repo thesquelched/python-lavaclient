@@ -17,8 +17,7 @@ import os.path
 
 REQUIREMENTS_TXT = os.path.join(
     os.path.abspath(os.path.dirname(__file__)),
-    'tools',
-    'pip-requires.txt')
+    'requirements.txt')
 
 
 def requirements():
@@ -34,7 +33,7 @@ if __name__ == '__main__':
         name='python-lavaclient',
         version='0.1',
         author='Rackspace',
-        description='Client library for Rackspace Lava API',
+        description='Client library for Rackspace Cloud Big Data API',
 
         packages=find_packages(exclude=['tests']),
         install_requires=requirements(),

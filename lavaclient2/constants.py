@@ -18,3 +18,13 @@ LOGGER_NAME = 'lavaclient2'
 
 # Authentication
 DEFAULT_AUTH_URL = 'https://identity.api.rackspacecloud.com/v2.0'
+CBD_SERVICE_TYPE = 'rax:bigdata'
+
+
+# Regions
+REGION_DFW = 'DFW'
+REGION_IAD = 'IAD'
+REGION_ORD = 'ORD'
+REGION_LON = 'LON'
+
+REGIONS = frozenset([REGION_DFW, REGION_IAD, REGION_ORD, REGION_LON])

@@ -18,5 +18,13 @@ class LavaError(Exception):
     pass
 
 
+class InvalidError(LavaError):
+    pass
+
+
 class AuthenticationError(LavaError):
+    pass
+
+
+class AuthorizationError(LavaError):
     pass

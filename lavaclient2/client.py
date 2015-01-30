@@ -11,6 +11,7 @@
 # under the License.
 
 import logging
+import six
 from keystoneclient import exceptions as ks_error
 
 from lavaclient2 import keystone
@@ -29,38 +30,59 @@ class Lava(object):
     def __init__(self,
                  api_key,
                  username,
+                 region,
                  auth_url=None,
                  tenant_id=None):
         """
-        Lava(api_key, username, [auth_url, tenant_id])
+        Lava(api_key, username, region, [auth_url, tenant_id])
 
         Create a Lava API client using your API key and username.
         Authentication is handled via Keystone.
 
         :param api_key: API key string
         :param username: Username string
+        :param region: Region identifier, e.g. 'DFW'
         :param auth_url: Override Keystone authentication url (optional)
         :param tenant_id: Your Rackspace tenant ID
         """
+        if api_key is None:
+            raise error.InvalidError("Missing api_key")
+
+        if username is None:
+            raise error.InvalidError("Missing username")
+
+        if not (isinstance(region, six.string_types)
+                and region.upper() in constants.REGIONS):
+            raise error.InvalidError("Invalid region: '{0}'".format(region))
+
         if auth_url is None:
             auth_url = constants.DEFAULT_AUTH_URL
 
-        self._auth = self.authenticate(auth_url, api_key, username, tenant_id)
+        self._auth = self.authenticate(auth_url,
+                                       api_key,
+                                       region,
+                                       username,
+                                       tenant_id)
         self._endpoint = self._auth.service_catalog.url_for(
-            service_type='rax:bigdata')
+            service_type=constants.CBD_SERVICE_TYPE)
 
-    def authenticate(self, auth_url, api_key, username, tenant_id):
+    def authenticate(self, auth_url, api_key, region, username, tenant_id):
         """Return keystone authentication client"""
         try:
             return keystone.ApiKeyClient(
                 auth_url=util.strip_url(auth_url),
                 api_key=api_key,
+                region=region,
                 username=username,
                 tenant_id=tenant_id)
-        except (ks_error.AuthorizationFailure, ks_error.Unauthorized) as exc:
+        except ks_error.AuthorizationFailure as exc:
             LOG.critical('Unable to authenticate', exc_info=exc)
             raise error.AuthenticationError(
                 'Authentication error: {0}'.format(exc))
+        except ks_error.Unauthorized as exc:
+            LOG.critical('Authorization error', exc_info=exc)
+            raise error.AuthorizationError(
+                'Authorization error: {0}'.format(exc))
 
     @property
     def token(self):

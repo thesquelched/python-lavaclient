@@ -20,7 +20,8 @@ import six
 from keystoneclient.i18n import _
 from keystoneclient.v2_0 import client as v2_client
 from keystoneclient.auth.identity import v2 as v2_auth
-from keystoneclient import exceptions
+from keystoneclient.exceptions import (
+    AuthorizationFailure, Unauthorized, EndpointNotFound)
 
 from lavaclient2 import constants
 
@@ -49,19 +50,22 @@ class ApiKeyAuth(v2_auth.Auth):
 
 class ApiKeyClient(v2_client.Client):
 
-    def __init__(self, api_key=None, username=None, **kwargs):
+    def __init__(self, api_key=None, **kwargs):
         """Initialize a new client for the Keystone v2.0 API using an API
         key."""
 
         if api_key is None:
             raise ValueError(_("Cannot authenticate without an api_key"))
 
-        if username is None:
+        if kwargs.get('username') is None:
             raise ValueError(_("Cannot authenticate without a username"))
+
+        if kwargs.get('region') is None:
+            raise ValueError(_("Cannot authenticate without a region"))
 
         self._api_key = api_key
 
-        super(ApiKeyClient, self).__init__(username=username, **kwargs)
+        super(ApiKeyClient, self).__init__(**kwargs)
 
     def get_raw_token_from_identity_service(self, auth_url, username=None,
                                             api_key=None, tenant_id=None,
@@ -69,8 +73,8 @@ class ApiKeyClient(v2_client.Client):
         """Authenticate against the v2 Identity API using an API key.
 
         :returns: access.AccessInfo if authentication was successful.
-        :raises keystoneclient.exceptions.AuthorizationFailure: if unable to
-            authenticate or validate the existing authorization token
+        :raises keystoneclient.AuthorizationFailure: if unable to authenticate
+            or validate the existing authorization token
         """
         try:
             if auth_url is None:
@@ -82,13 +86,13 @@ class ApiKeyClient(v2_client.Client):
                                 tenant_id=project_id or tenant_id)
 
             return plugin.get_auth_ref(self.session)
-        except (exceptions.AuthorizationFailure, exceptions.Unauthorized):
-            LOG.debug("Authorization Failed.")
+        except (AuthorizationFailure, Unauthorized) as exc:
+            LOG.debug("Authorization Failed.", exc_info=exc)
             raise
-        except exceptions.EndpointNotFound as exc:
+        except EndpointNotFound as exc:
             msg = (
                 _('There was no suitable authentication url for this request'))
-            six.raise_from(exceptions.AuthorizationFailure(msg), exc)
+            six.raise_from(AuthorizationFailure(msg), exc)
         except Exception as exc:
             msg = _("Authorization Failed: %s".format(exc))
-            six.raise_from(exceptions.AuthorizationFailure(msg), exc)
+            six.raise_from(AuthorizationFailure(msg), exc)
