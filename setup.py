@@ -20,14 +20,6 @@ REQUIREMENTS_TXT = os.path.join(
     'requirements.txt')
 
 
-def requirements():
-    try:
-        with open(REQUIREMENTS_TXT) as f:
-            return f.readlines()
-    except IOError:
-        return []
-
-
 if __name__ == '__main__':
     setup(
         name='python-lavaclient',
@@ -36,7 +28,7 @@ if __name__ == '__main__':
         description='Client library for Rackspace Cloud Big Data API',
 
         packages=find_packages(exclude=['tests']),
-        install_requires=requirements(),
+        install_requires=[],
 
         classifiers=[
             "Development Status :: 3 - Alpha",
