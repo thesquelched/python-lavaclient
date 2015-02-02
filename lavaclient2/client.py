@@ -31,9 +31,10 @@ class Lava(object):
                  username,
                  region,
                  auth_url=None,
-                 tenant_id=None):
+                 tenant_id=None,
+                 endpoint=None):
         """
-        Lava(api_key, username, region, [auth_url, tenant_id])
+        Lava(api_key, username, region, [auth_url, tenant_id, endpoint])
 
         Create a Lava API client using your API key and username.
         Authentication is handled via Keystone.
@@ -42,7 +43,8 @@ class Lava(object):
         :param username: Username string
         :param region: Region identifier, e.g. 'DFW'
         :param auth_url: Override Keystone authentication url (optional)
-        :param tenant_id: Your Rackspace tenant ID
+        :param tenant_id: Your Rackspace tenant ID (optional)
+        :param endpoint: Override Cloud Big Data endpoint URL (optional)
         """
         if api_key is None:
             raise error.InvalidError("Missing api_key")
@@ -61,9 +63,12 @@ class Lava(object):
                                        region,
                                        username,
                                        tenant_id)
-        self._endpoint = self._get_endpoint(region)
+        self._endpoint = self._get_endpoint(endpoint, region)
 
-    def _get_endpoint(self, region):
+    def _get_endpoint(self, endpoint, region):
+        if endpoint is not None:
+            return endpoint
+
         try:
             return self._auth.service_catalog.url_for(
                 service_type=constants.CBD_SERVICE_TYPE,

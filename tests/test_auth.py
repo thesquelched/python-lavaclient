@@ -78,6 +78,18 @@ def test_auth_client(post, auth_response):
     assert client.endpoint == 'publicURL'
 
 
+@patch('keystoneclient.session.Session.post')
+def test_auth_endpoint(post, auth_response):
+    post.return_value = MagicMock(
+        json=MagicMock(return_value=auth_response)
+    )
+    client = Lava('apikey', 'username', 'region', endpoint='endpoint')
+
+    assert post.call_count == 1
+    assert client.token == 'ab48a9efdfedb23ty3494'
+    assert client.endpoint == 'endpoint'
+
+
 def test_auth_errors(auth_response):
     pytest.raises(error.InvalidError, Lava, None, 'username', 'region')
     pytest.raises(error.InvalidError, Lava, 'apikey', None, 'region')
