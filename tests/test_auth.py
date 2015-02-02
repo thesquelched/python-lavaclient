@@ -79,12 +79,14 @@ def test_auth_client(post, auth_response):
 
 
 @patch('keystoneclient.session.Session.post')
-def test_auth_endpoint(post, auth_response):
+@patch.object(Lava, '_get_endpoint')
+def test_auth_endpoint(get_endpoint, post, auth_response):
     post.return_value = MagicMock(
         json=MagicMock(return_value=auth_response)
     )
     client = Lava('apikey', 'username', 'region', endpoint='endpoint')
 
+    assert get_endpoint.call_count == 0
     assert post.call_count == 1
     assert client.token == 'ab48a9efdfedb23ty3494'
     assert client.endpoint == 'endpoint'

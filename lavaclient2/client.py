@@ -63,12 +63,12 @@ class Lava(object):
                                        region,
                                        username,
                                        tenant_id)
-        self._endpoint = self._get_endpoint(endpoint, region)
 
-    def _get_endpoint(self, endpoint, region):
-        if endpoint is not None:
-            return endpoint
+        if endpoint is None:
+            endpoint = self._get_endpoint(region)
+        self._endpoint = endpoint
 
+    def _get_endpoint(self, region):
         try:
             return self._auth.service_catalog.url_for(
                 service_type=constants.CBD_SERVICE_TYPE,
