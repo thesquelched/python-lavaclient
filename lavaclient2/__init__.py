@@ -9,3 +9,18 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+
+import logging
+
+
+# Attempt to import the NullHandler (not available in py2.6)
+try:
+    from logging import NullHandler
+except ImportError:
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
+
+
+LOG = logging.getLogger('lava')
+LOG.addHandler(NullHandler())
