@@ -28,3 +28,7 @@ class AuthenticationError(LavaError):
 
 class AuthorizationError(LavaError):
     pass
+
+
+class RequestError(LavaError):
+    pass

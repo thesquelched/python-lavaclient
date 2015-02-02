@@ -14,6 +14,9 @@ import logging
 import six
 import re
 from keystoneclient import exceptions as ks_error
+import uuid
+import requests
+import six
 
 from lavaclient2 import keystone
 from lavaclient2 import util
@@ -63,6 +66,12 @@ class Lava(object):
 
         if auth_url is None:
             auth_url = constants.DEFAULT_AUTH_URL
+
+        self._auth_url = auth_url
+        self._api_key = api_key
+        self._region = region
+        self._username = username
+        self._tenant_id = tenant_id
 
         self._auth = self.authenticate(auth_url,
                                        api_key,
@@ -126,10 +135,74 @@ class Lava(object):
             raise error.AuthorizationError(
                 'Authorization error: {0}'.format(exc))
 
+    def _reauthenticate(self):
+        """Reauthenticate with keystone, assuming our token is no longer
+        valid"""
+        LOG.info('Reauthenticating via keystone')
+
+        old_token = self.token
+        self._auth = self.authenticate(self._auth_url,
+                                       self._api_key,
+                                       self._region,
+                                       self._username,
+                                       self._tenant_id)
+
+        if self.token == old_token:
+            LOG.warn('Reauthentication produced the same token')
+
     @property
     def token(self):
         return self._auth.auth_token
 
     @property
     def endpoint(self):
-        return self._endpoint
+        return self._endpoint.rstrip('/')
+
+    def _get(self, path, **kwargs):
+        """Make a GET request, same as requests.get"""
+        return self._request('GET', path, **kwargs)
+
+    def _post(self, path, **kwargs):
+        """Make a POST request, same as requests.post"""
+        return self._request('POST', path, **kwargs)
+
+    def _put(self, path, **kwargs):
+        """Make a PUT request, same as requests.put"""
+        return self._request('PUT', path, **kwargs)
+
+    def _delete(self, path, **kwargs):
+        """Make a DELETE request, same as requests.delete"""
+        return self._request('DELETE', path, **kwargs)
+
+    def _request(self, method, path, reauthenticate=True, **kwargs):
+        """Same as requests.request, but automatically injects
+        authentication headers into request and prepends endpoint to path"""
+        headers = kwargs.get('headers') or {}
+        headers['X-Auth-Token'] = self.token
+        headers['Client-Request-ID'] = six.text_type(uuid.uuid4())
+        kwargs['headers'] = headers
+
+        url = '{0}/{1}'.format(self.endpoint, path.lstrip('/'))
+
+        try:
+            resp = requests.request(method, url, **kwargs)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.exceptions.HTTPError as exc:
+            if exc.response.status_code != requests.codes.unauthorized:
+                six.raise_from(error.RequestError(exc), exc)
+
+            if reauthenticate:
+                self._reauthenticate()
+                return self._request(method, path, reauthenticate=False,
+                                     **kwargs)
+
+            msg = '{0} /{1}: Unauthorized'.format(
+                method.upper(), path.lstrip('/'))
+            LOG.critical(msg, exc_info=exc)
+            six.raise_from(error.AuthorizationError(msg), exc)
+        except requests.exceptions.RequestException as exc:
+            msg = '{0} /{1}: Error encountered during request'.format(
+                method.upper(), path.lstrip('/'))
+            LOG.critical(msg, exc_info=exc)
+            six.raise_from(error.RequestError(msg), exc)
