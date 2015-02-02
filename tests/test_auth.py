@@ -51,7 +51,7 @@ def auth_response():
                     "endpoints": [
                         {
                             "tenantId": "tenantId",
-                            "publicURL": "publicURL",
+                            "publicURL": "publicURL/v2/tenantId",
                             "internalURL": "internalURL",
                             "region": "region",
                             "versionId": "versionId",
@@ -71,25 +71,56 @@ def test_auth_client(post, auth_response):
     post.return_value = MagicMock(
         json=MagicMock(return_value=auth_response)
     )
-    client = Lava('apikey', 'username', 'region')
+    client = Lava('apikey', 'username', 'region', tenant_id='tenantId')
 
     assert post.call_count == 1
     assert client.token == 'ab48a9efdfedb23ty3494'
-    assert client.endpoint == 'publicURL'
+    assert client.endpoint == 'publicURL/v2/tenantId'
 
 
-@patch('keystoneclient.session.Session.post')
 @patch.object(Lava, '_get_endpoint')
-def test_auth_endpoint(get_endpoint, post, auth_response):
+@patch('keystoneclient.session.Session.post')
+def test_auth_endpoint(post, get_endpoint, auth_response):
     post.return_value = MagicMock(
         json=MagicMock(return_value=auth_response)
     )
-    client = Lava('apikey', 'username', 'region', endpoint='endpoint')
+
+    client1 = Lava('apikey', 'username', 'region', endpoint='v2/tenant')
 
     assert get_endpoint.call_count == 0
     assert post.call_count == 1
-    assert client.token == 'ab48a9efdfedb23ty3494'
-    assert client.endpoint == 'endpoint'
+    assert client1.token == 'ab48a9efdfedb23ty3494'
+    assert client1.endpoint == 'v2/tenant'
+
+
+@patch.object(Lava, '_get_endpoint')
+@patch('keystoneclient.session.Session.post')
+def test_auth_endpoint_validation(post, get_endpoint, auth_response):
+    post.return_value = MagicMock(
+        json=MagicMock(return_value=auth_response)
+    )
+
+    assert Lava('apikey',
+                'username',
+                'region',
+                endpoint='v2/tenant').endpoint == 'v2/tenant'
+    assert Lava('apikey',
+                'username',
+                'region',
+                endpoint='v2',
+                tenant_id='tenant').endpoint == 'v2/tenant'
+    assert Lava('apikey',
+                'username',
+                'region',
+                endpoint='v2/tenant',
+                tenant_id='tenant').endpoint == 'v2/tenant'
+
+    pytest.raises(error.InvalidError, Lava, 'apikey', 'username', 'region',
+                  endpoint='foo')
+    pytest.raises(error.InvalidError, Lava, 'apikey', 'username', 'region',
+                  endpoint='v2/something', tenant_id='tenant')
+    pytest.raises(error.InvalidError, Lava, 'apikey', 'username', 'region',
+                  endpoint='foo', tenant_id='tenant')
 
 
 def test_auth_errors(auth_response):

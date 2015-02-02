@@ -11,6 +11,8 @@
 # under the License.
 
 import logging
+import six
+import re
 from keystoneclient import exceptions as ks_error
 
 from lavaclient2 import keystone
@@ -55,6 +57,10 @@ class Lava(object):
         if region is None:
             raise error.InvalidError('Missing region')
 
+        # Ensure tenant_id is unicode
+        if tenant_id is not None:
+            tenant_id = six.text_type(tenant_id)
+
         if auth_url is None:
             auth_url = constants.DEFAULT_AUTH_URL
 
@@ -65,14 +71,38 @@ class Lava(object):
                                        tenant_id)
 
         if endpoint is None:
-            endpoint = self._get_endpoint(region)
-        self._endpoint = endpoint
+            self._endpoint = self._get_endpoint(region, tenant_id)
+        else:
+            self._endpoint = self._validate_endpoint(endpoint, tenant_id)
 
-    def _get_endpoint(self, region):
+    def _validate_endpoint(self, endpoint, tenant_id):
+        """Validate that the endpoint ends with v2/<tenant_id>"""
+
+        endpoint = endpoint.rstrip('/')
+
+        if tenant_id is None:
+            if re.search(r'v2/[^/]+$', endpoint):
+                return endpoint
+
+            raise error.InvalidError('Endpoint must end with v2/<tenant_id>')
+
+        if endpoint.endswith('v2/{0}'.format(tenant_id)):
+            return endpoint
+        elif endpoint.endswith('v2'):
+            return '{0}/{1}'.format(endpoint, tenant_id)
+
+        raise error.InvalidError('Endpoint must end with v2 or v2/<tenant_id>')
+
+    def _get_endpoint(self, region, tenant_id):
+        filters = dict(
+            service_type=constants.CBD_SERVICE_TYPE,
+            region_name=region)
+
+        if tenant_id:
+            filters.update(attr='tenantId', filter_value=tenant_id)
+
         try:
-            return self._auth.service_catalog.url_for(
-                service_type=constants.CBD_SERVICE_TYPE,
-                region_name=region)
+            return self._auth.service_catalog.url_for(**filters)
         except ks_error.EndpointNotFound as exc:
             LOG.critical('Error getting endpoint: {0}'.format(exc),
                          exc_info=exc)
