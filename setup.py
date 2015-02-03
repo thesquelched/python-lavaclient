@@ -20,10 +20,31 @@ REQUIREMENTS_TXT = os.path.join(
     'requirements.txt')
 
 
+def requirements():
+    try:
+        with open(REQUIREMENTS_TXT) as f:
+            return f.readlines()
+    except IOError:
+        return []
+
+
+def read_version():
+    """Read the version from the lavaclient2 module"""
+    path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        'lavaclient2',
+        '__init__.py'
+    )
+    with open(path) as f:
+        exec(f.read())
+        # Same as just returning __version__, but doesn't set off pyflakes
+        return locals()['__version__']
+
+
 if __name__ == '__main__':
     setup(
         name='python-lavaclient',
-        version='0.1',
+        version=read_version(),
         author='Rackspace',
         description='Client library for Rackspace Cloud Big Data API',
 

@@ -4,6 +4,7 @@ import requests
 
 from lavaclient2 import client
 from lavaclient2 import error
+from lavaclient2 import __version__
 
 
 @pytest.fixture
@@ -31,26 +32,38 @@ def test_requests(uuid4, lavaclient):
     with patch('requests.request') as request:
         lavaclient._get('path')
         request.assert_called_with(
-            'GET', 'endpoint/path', headers={'X-Auth-Token': 'auth_token',
-                                             'Client-Request-ID': 'uuid'})
+            'GET', 'endpoint/path',
+            headers={'X-Auth-Token': 'auth_token',
+                     'Client-Request-ID': 'uuid',
+                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                         __version__)})
 
     with patch('requests.request') as request:
         lavaclient._post('path')
         request.assert_called_with(
-            'POST', 'endpoint/path', headers={'X-Auth-Token': 'auth_token',
-                                              'Client-Request-ID': 'uuid'})
+            'POST', 'endpoint/path',
+            headers={'X-Auth-Token': 'auth_token',
+                     'Client-Request-ID': 'uuid',
+                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                         __version__)})
 
     with patch('requests.request') as request:
         lavaclient._put('path')
         request.assert_called_with(
-            'PUT', 'endpoint/path', headers={'X-Auth-Token': 'auth_token',
-                                             'Client-Request-ID': 'uuid'})
+            'PUT', 'endpoint/path',
+            headers={'X-Auth-Token': 'auth_token',
+                     'Client-Request-ID': 'uuid',
+                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                         __version__)})
 
     with patch('requests.request') as request:
         lavaclient._delete('path')
         request.assert_called_with(
-            'DELETE', 'endpoint/path', headers={'X-Auth-Token': 'auth_token',
-                                                'Client-Request-ID': 'uuid'})
+            'DELETE', 'endpoint/path',
+            headers={'X-Auth-Token': 'auth_token',
+                     'Client-Request-ID': 'uuid',
+                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                         __version__)})
 
 
 @patch('uuid.uuid4')
@@ -60,9 +73,12 @@ def test_headers(uuid4, lavaclient):
     with patch('requests.request') as request:
         lavaclient._get('path', headers={'foo': 'bar'})
         request.assert_called_with(
-            'GET', 'endpoint/path', headers={'foo': 'bar',
-                                             'X-Auth-Token': 'auth_token',
-                                             'Client-Request-ID': 'uuid'})
+            'GET', 'endpoint/path',
+            headers={'foo': 'bar',
+                     'X-Auth-Token': 'auth_token',
+                     'Client-Request-ID': 'uuid',
+                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                         __version__)})
 
 
 def test_reauthenticate(lavaclient):

@@ -10,7 +10,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+__version_info__ = (0, 1, 'alpha1')
+__version__ = '.'.join(map(str, __version_info__))
+
+
 import logging
+from lavaclient2 import constants
 
 
 # Attempt to import the NullHandler (not available in py2.6)
@@ -22,5 +27,5 @@ except ImportError:
             pass
 
 
-LOG = logging.getLogger('lava')
+LOG = logging.getLogger(constants.LOGGER_NAME)
 LOG.addHandler(NullHandler())

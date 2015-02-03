@@ -18,6 +18,7 @@ import uuid
 import requests
 import six
 
+from lavaclient2 import __version__
 from lavaclient2 import keystone
 from lavaclient2 import util
 from lavaclient2 import constants
@@ -174,12 +175,19 @@ class Lava(object):
         """Make a DELETE request, same as requests.delete"""
         return self._request('DELETE', path, **kwargs)
 
+    def _generate_headers(self):
+        """Generate request headers"""
+        return {
+            'X-Auth-Token': self.token,
+            'Client-Request-ID': six.text_type(uuid.uuid4()),
+            'User-Agent': 'python-lavaclient2 {0}'.format(__version__),
+        }
+
     def _request(self, method, path, reauthenticate=True, **kwargs):
         """Same as requests.request, but automatically injects
         authentication headers into request and prepends endpoint to path"""
         headers = kwargs.get('headers') or {}
-        headers['X-Auth-Token'] = self.token
-        headers['Client-Request-ID'] = six.text_type(uuid.uuid4())
+        headers.update(self._generate_headers())
         kwargs['headers'] = headers
 
         url = '{0}/{1}'.format(self.endpoint, path.lstrip('/'))
