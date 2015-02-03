@@ -16,7 +16,6 @@ import re
 from keystoneclient import exceptions as ks_error
 import uuid
 import requests
-import six
 
 from lavaclient2 import __version__
 from lavaclient2 import keystone
