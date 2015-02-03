@@ -1,11 +1,11 @@
 from figgis import ValidationError
 
 
-def Length(min=0, max=None):
+def Length(min=None, max=None):
     """min <= len(value) <= max"""
 
     def validator(value, min=min, max=max):
-        if len(value) < min:
+        if min is not None and len(value) < min:
             raise ValidationError('Length is less than {0}'.format(min))
 
         if max is not None and len(value) > max:
@@ -16,11 +16,11 @@ def Length(min=0, max=None):
     return validator
 
 
-def Range(min=0, max=None):
+def Range(min=None, max=None):
     """min <= value <= max"""
 
     def validator(value, min=min, max=max):
-        if value < min:
+        if min is not None and value < min:
             raise ValidationError('Value is less than {0}'.format(min))
 
         if max is not None and value > max:
