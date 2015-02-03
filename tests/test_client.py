@@ -2,27 +2,8 @@ from mock import patch, MagicMock
 import pytest
 import requests
 
-from lavaclient2 import client
 from lavaclient2 import error
 from lavaclient2 import __version__
-
-
-@pytest.fixture
-def lavaclient():
-    with patch.object(client.Lava, 'authenticate') as auth:
-        auth.return_value = MagicMock(
-            auth_token='auth_token',
-            service_catalog=MagicMock(
-                url_for=MagicMock(
-                    return_value='endpoint'
-                )
-            )
-        )
-        return client.Lava('api_key',
-                           'username',
-                           'region',
-                           auth_url='auth_url',
-                           tenant_id='tenant_id')
 
 
 @patch('uuid.uuid4')
@@ -33,6 +14,7 @@ def test_requests(uuid4, lavaclient):
         lavaclient._get('path')
         request.assert_called_with(
             'GET', 'endpoint/path',
+            verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
                      'User-Agent': 'python-lavaclient2 {0}'.format(
@@ -42,6 +24,7 @@ def test_requests(uuid4, lavaclient):
         lavaclient._post('path')
         request.assert_called_with(
             'POST', 'endpoint/path',
+            verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
                      'User-Agent': 'python-lavaclient2 {0}'.format(
@@ -51,6 +34,7 @@ def test_requests(uuid4, lavaclient):
         lavaclient._put('path')
         request.assert_called_with(
             'PUT', 'endpoint/path',
+            verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
                      'User-Agent': 'python-lavaclient2 {0}'.format(
@@ -60,6 +44,7 @@ def test_requests(uuid4, lavaclient):
         lavaclient._delete('path')
         request.assert_called_with(
             'DELETE', 'endpoint/path',
+            verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
                      'User-Agent': 'python-lavaclient2 {0}'.format(
@@ -74,6 +59,7 @@ def test_headers(uuid4, lavaclient):
         lavaclient._get('path', headers={'foo': 'bar'})
         request.assert_called_with(
             'GET', 'endpoint/path',
+            verify=False,
             headers={'foo': 'bar',
                      'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
