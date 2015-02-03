@@ -8,7 +8,7 @@ from lavaclient2 import constants
 LOG = logging.getLogger(constants.LOGGER_NAME)
 
 
-class ApiMethod(object):
+class Resource(object):
 
     def parse_response(self, data, response_class, wrapper=None):
         if wrapper is not None and not hasattr(response_class, wrapper):
@@ -22,3 +22,12 @@ class ApiMethod(object):
             msg = 'Invalid response: {0}'.format(exc)
             LOG.critical(msg, exc_info=exc)
             raise error.ApiError(msg)
+
+    def marshal_request(self, data, request_class, wrapper=None):
+        try:
+            request_class(data)
+            return data if wrapper is None else {wrapper: data}
+        except (figgis.PropertyError, figgis.ValidationError) as exc:
+            msg = 'Invalid request data: {0}'.format(exc)
+            LOG.critical(msg, exc_info=exc)
+            raise error.InvalidError(msg)
