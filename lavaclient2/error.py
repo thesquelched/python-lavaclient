@@ -32,3 +32,7 @@ class AuthorizationError(LavaError):
 
 class RequestError(LavaError):
     pass
+
+
+class ApiError(LavaError):
+    pass

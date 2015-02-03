@@ -22,6 +22,7 @@ from lavaclient2 import keystone
 from lavaclient2 import util
 from lavaclient2 import constants
 from lavaclient2 import error
+from lavaclient2.api.clusters import ClustersApi
 
 
 LOG = logging.getLogger(constants.LOGGER_NAME)
@@ -37,7 +38,8 @@ class Lava(object):
                  region,
                  auth_url=None,
                  tenant_id=None,
-                 endpoint=None):
+                 endpoint=None,
+                 verify_ssl=None):
         """
         Lava(api_key, username, region, [auth_url, tenant_id, endpoint])
 
@@ -72,6 +74,7 @@ class Lava(object):
         self._region = region
         self._username = username
         self._tenant_id = tenant_id
+        self._verify_ssl = verify_ssl
 
         self._auth = self.authenticate(auth_url,
                                        api_key,
@@ -83,6 +86,9 @@ class Lava(object):
             self._endpoint = self._get_endpoint(region, tenant_id)
         else:
             self._endpoint = self._validate_endpoint(endpoint, tenant_id)
+
+        # Initialize API method objects
+        self.clusters = ClustersApi(self)
 
     def _validate_endpoint(self, endpoint, tenant_id):
         """Validate that the endpoint ends with v2/<tenant_id>"""
@@ -158,6 +164,10 @@ class Lava(object):
     def endpoint(self):
         return self._endpoint.rstrip('/')
 
+    ######################################################################
+    # Request methods
+    ######################################################################
+
     def _get(self, path, **kwargs):
         """Make a GET request, same as requests.get"""
         return self._request('GET', path, **kwargs)
@@ -185,6 +195,9 @@ class Lava(object):
     def _request(self, method, path, reauthenticate=True, **kwargs):
         """Same as requests.request, but automatically injects
         authentication headers into request and prepends endpoint to path"""
+        if self._verify_ssl is not None:
+            kwargs['verify'] = kwargs.get('verify', self._verify_ssl)
+
         headers = kwargs.get('headers') or {}
         headers.update(self._generate_headers())
         kwargs['headers'] = headers

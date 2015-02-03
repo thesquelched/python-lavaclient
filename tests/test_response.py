@@ -44,11 +44,3 @@ def test_cluster(cluster_response):
     assert group.count == 1
     assert group.flavor_id == 'hadoop1-60'
     assert group.components == {}
-
-
-def test_clusters_response(cluster_response):
-    resp = response.ClustersResponse(clusters=[cluster_response])
-    assert len(resp.clusters) == 1
-
-    resp = response.ClustersResponse()
-    assert len(resp.clusters) == 0

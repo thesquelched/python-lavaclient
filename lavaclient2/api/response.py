@@ -46,8 +46,3 @@ class Cluster(Config):
     stack_id = Field(text_type, required=True)
 
     node_groups = ListField(NodeGroup, default=[])
-
-
-class ClustersResponse(Config):
-
-    clusters = ListField(Cluster, default=[])

@@ -21,7 +21,7 @@ from lavaclient2 import constants
 # Attempt to import the NullHandler (not available in py2.6)
 try:
     from logging import NullHandler
-except ImportError:
+except ImportError:  # pragma: no cover
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
