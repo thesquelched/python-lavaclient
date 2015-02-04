@@ -12,7 +12,7 @@
 
 
 from figgis import Config, Field, ListField
-from six import text_type
+import six
 from dateutil.parser import parse as dateparse
 from datetime import datetime
 
@@ -27,22 +27,38 @@ def DateTime(value):
     return dateparse(value)
 
 
-class NodeGroup(Config):
+class IdReprMixin(object):
 
-    id = Field(text_type, required=True,
+    def __repr__(self):
+        return '{0}(id={1})'.format(self.__class__.__name__, repr(self.id))
+
+
+class NodeGroup(Config, IdReprMixin):
+
+    id = Field(six.text_type, required=True,
                validator=validators.Length(min=1, max=255))
     count = Field(int, validator=validators.Range(min=1, max=100))
-    flavor_id = Field(text_type)
+    flavor_id = Field(six.text_type)
     components = Field(dict, default={})
 
 
-class Cluster(Config):
+class Cluster(Config, IdReprMixin):
 
-    id = Field(text_type, required=True)
+    id = Field(six.text_type, required=True)
     created = Field(DateTime, required=True)
     updated = Field(DateTime)
-    name = Field(text_type)
-    status = Field(text_type, required=True)
-    stack_id = Field(text_type, required=True)
+    name = Field(six.text_type)
+    status = Field(six.text_type, required=True)
+    stack_id = Field(six.text_type, required=True)
 
     node_groups = ListField(NodeGroup, default=[])
+
+
+class Link(Config):
+
+    rel = Field(six.text_type, required=True)
+    href = Field(six.text_type, required=True)
+
+    def __repr__(self):
+        return 'Link(rel={0}, href={1})'.format(
+            repr(self.rel), repr(self.href))

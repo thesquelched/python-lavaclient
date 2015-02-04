@@ -21,3 +21,11 @@ def lavaclient():
                            auth_url='auth_url',
                            tenant_id='tenant_id',
                            verify_ssl=False)
+
+
+@pytest.fixture
+def link_response():
+    return {
+        'rel': 'rel',
+        'href': 'href',
+    }
