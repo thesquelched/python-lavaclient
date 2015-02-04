@@ -1,5 +1,4 @@
 import pytest
-import six
 from datetime import datetime
 
 from lavaclient2.api import response
@@ -49,11 +48,7 @@ def test_cluster(cluster_response):
 
 def test_cluster_repr(cluster_response):
     cluster = response.Cluster(cluster_response)
-
-    if six.PY3:
-        assert repr(cluster) == "Cluster(id='cluster_id')"
-    else:
-        assert repr(cluster) == "Cluster(id=u'cluster_id')"
+    assert repr(cluster) == "Cluster(id='cluster_id')"
 
 
 def test_link(link_response):
@@ -62,7 +57,4 @@ def test_link(link_response):
     assert link.rel == 'rel'
     assert link.href == 'href'
 
-    if six.PY3:
-        assert repr(link) == "Link(rel='rel', href='href')"
-    else:
-        assert repr(link) == "Link(rel=u'rel', href=u'href')"
+    assert repr(link) == "Link(rel='rel', href='href')"

@@ -30,7 +30,7 @@ def DateTime(value):
 class IdReprMixin(object):
 
     def __repr__(self):
-        return '{0}(id={1})'.format(self.__class__.__name__, repr(self.id))
+        return "{0}(id='{1}')".format(self.__class__.__name__, self.id)
 
 
 class NodeGroup(Config, IdReprMixin):
@@ -60,5 +60,5 @@ class Link(Config):
     href = Field(six.text_type, required=True)
 
     def __repr__(self):
-        return 'Link(rel={0}, href={1})'.format(
-            repr(self.rel), repr(self.href))
+        return "Link(rel='{0}', href='{1}')".format(
+            self.rel, self.href)
