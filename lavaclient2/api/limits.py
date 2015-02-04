@@ -51,9 +51,6 @@ class Resource(resource.Resource):
 
     """Limits API methods"""
 
-    def __init__(self, client):
-        self._client = client
-
     def get(self):
         """
         Get resource limits for the tenant.

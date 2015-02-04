@@ -8,7 +8,7 @@ from lavaclient2 import error
 
 @pytest.fixture
 def apiresource():
-    return resource.Resource()
+    return resource.Resource(None)
 
 
 @pytest.fixture

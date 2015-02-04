@@ -59,9 +59,6 @@ class Resource(resource.Resource):
 
     """Clusters API methods"""
 
-    def __init__(self, client):
-        self._client = client
-
     def list(self):
         """
         List clusters that belong to the tenant specified in the client

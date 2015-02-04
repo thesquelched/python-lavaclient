@@ -10,6 +10,9 @@ LOG = logging.getLogger(constants.LOGGER_NAME)
 
 class Resource(object):
 
+    def __init__(self, client):
+        self._client = client
+
     def parse_response(self, data, response_class, wrapper=None):
         if wrapper is not None and not hasattr(response_class, wrapper):
             raise AttributeError('{0} does not have attribute {1}'.format(
