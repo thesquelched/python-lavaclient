@@ -16,7 +16,7 @@ import six
 from dateutil.parser import parse as dateparse
 from datetime import datetime
 
-from lavaclient2 import validators
+from lavaclient2.validators import Length, Range
 
 
 def DateTime(value):
@@ -36,8 +36,8 @@ class IdReprMixin(object):
 class NodeGroup(Config, IdReprMixin):
 
     id = Field(six.text_type, required=True,
-               validator=validators.Length(min=1, max=255))
-    count = Field(int, validator=validators.Range(min=1, max=100))
+               validator=Length(min=1, max=255))
+    count = Field(int, validator=Range(min=1, max=100))
     flavor_id = Field(six.text_type)
     components = Field(dict, default={})
 
@@ -72,3 +72,32 @@ class Flavor(Config, IdReprMixin):
     vcpus = Field(int, required=True)
     ram = Field(int, required=True)
     links = ListField(Link, required=True)
+
+
+class ServiceComponent(Config):
+
+    name = Field(six.text_type, required=True)
+    mode = Field(six.text_type)
+
+
+class BaseService(Config):
+
+    name = Field(six.text_type, required=True)
+    version = Field(six.text_type, required=True)
+    components = ListField(ServiceComponent, required=True)
+
+
+class StackService(Config):
+
+    __inherits__ = [BaseService]
+
+    modes = ListField(six.text_type)
+
+
+class Stack(Config, IdReprMixin):
+
+    id = Field(six.text_type, required=True)
+    name = Field(six.text_type, required=True)
+    distro = Field(six.text_type, required=True)
+    services = ListField(StackService, required=True)
+    node_groups = ListField(NodeGroup)

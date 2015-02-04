@@ -1,3 +1,4 @@
+import six
 from figgis import ValidationError
 
 
@@ -29,3 +30,20 @@ def Range(min=None, max=None):
         return True
 
     return validator
+
+
+def List(validator):
+    """Verify that each item in the list is validated by the given
+    validator"""
+
+    def listvalidator(value, validator=validator):
+        for i, item in enumerate(value):
+            try:
+                validator(item)
+            except ValidationError as exc:
+                six.raise_from(
+                    ValidationError('Item {0} is invalid: {1}'.format(i, exc)),
+                    exc)
+
+        return True
+    return listvalidator

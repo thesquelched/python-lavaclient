@@ -41,3 +41,13 @@ def flavor_response(link_response):
         'disk': 2500,
         'links': [link_response],
     }
+
+
+@pytest.fixture
+def node_group():
+    return {
+        'id': 'node_id',
+        'count': 1,
+        'flavor_id': 'hadoop1-60',
+        'components': {},
+    }

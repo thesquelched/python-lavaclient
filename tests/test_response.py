@@ -59,6 +59,7 @@ def test_link(link_response):
 
     assert repr(link) == "Link(rel='rel', href='href')"
 
+
 def test_flavors(flavor_response):
     flavor = response.Flavor(flavor_response)
 
