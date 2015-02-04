@@ -58,3 +58,16 @@ def test_link(link_response):
     assert link.href == 'href'
 
     assert repr(link) == "Link(rel='rel', href='href')"
+
+def test_flavors(flavor_response):
+    flavor = response.Flavor(flavor_response)
+
+    assert flavor.id == 'hadoop1-15'
+    assert flavor.name == 'Medium Hadoop Instance'
+    assert flavor.vcpus == 4
+    assert flavor.ram == 15360
+    assert flavor.disk == 2500
+
+    assert isinstance(flavor.links, list)
+    assert len(flavor.links) == 1
+    assert isinstance(flavor.links[0], response.Link)

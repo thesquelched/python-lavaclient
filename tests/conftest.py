@@ -29,3 +29,15 @@ def link_response():
         'rel': 'rel',
         'href': 'href',
     }
+
+
+@pytest.fixture
+def flavor_response(link_response):
+    return {
+        'id': 'hadoop1-15',
+        'name': 'Medium Hadoop Instance',
+        'vcpus': 4,
+        'ram': 15360,
+        'disk': 2500,
+        'links': [link_response],
+    }

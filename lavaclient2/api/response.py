@@ -62,3 +62,13 @@ class Link(Config):
     def __repr__(self):
         return "Link(rel='{0}', href='{1}')".format(
             self.rel, self.href)
+
+
+class Flavor(Config, IdReprMixin):
+
+    id = Field(six.text_type, required=True)
+    name = Field(six.text_type, required=True)
+    disk = Field(int, required=True)
+    vcpus = Field(int, required=True)
+    ram = Field(int, required=True)
+    links = ListField(Link, required=True)
