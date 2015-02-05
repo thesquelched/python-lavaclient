@@ -43,7 +43,7 @@ def read_version():
 
 if __name__ == '__main__':
     setup(
-        name='python-lavaclient',
+        name='python-lavaclient2',
         version=read_version(),
         author='Rackspace',
         description='Client library for Rackspace Cloud Big Data API',
