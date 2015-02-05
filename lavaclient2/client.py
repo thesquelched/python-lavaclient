@@ -33,28 +33,31 @@ class Lava(object):
     """Lava API Client"""
 
     def __init__(self,
-                 api_key,
                  username,
                  region,
+                 password=None,
+                 api_key=None,
                  auth_url=None,
                  tenant_id=None,
                  endpoint=None,
                  verify_ssl=None):
         """
-        Lava(api_key, username, region, [auth_url, tenant_id, endpoint])
+        Lava(username, region, [api_key, password, auth_url, tenant_id,
+             endpoint])
 
         Create a Lava API client using your API key and username.
         Authentication is handled via Keystone.
 
-        :param api_key: API key string
         :param username: Username string
         :param region: Region identifier, e.g. 'DFW'
+        :param api_key: API key string (optional)
+        :param password: Keystone auth password (optional)
         :param auth_url: Override Keystone authentication url (optional)
         :param tenant_id: Your Rackspace tenant ID (optional)
         :param endpoint: Override Cloud Big Data endpoint URL (optional)
         """
-        if api_key is None:
-            raise error.InvalidError("Missing api_key")
+        if api_key is None and password is None:
+            raise error.InvalidError("One of api_key or password is required")
 
         if username is None:
             raise error.InvalidError("Missing username")
@@ -70,8 +73,9 @@ class Lava(object):
             auth_url = constants.DEFAULT_AUTH_URL
 
         self._auth_url = auth_url
-        self._api_key = api_key
         self._region = region
+        self._api_key = api_key
+        self._password = password
         self._username = username
         self._tenant_id = tenant_id
         self._verify_ssl = verify_ssl
@@ -80,6 +84,7 @@ class Lava(object):
                                        api_key,
                                        region,
                                        username,
+                                       password,
                                        tenant_id)
 
         if endpoint is None:
@@ -123,12 +128,14 @@ class Lava(object):
                          exc_info=exc)
             raise error.InvalidError(str(exc))
 
-    def authenticate(self, auth_url, api_key, region, username, tenant_id):
+    def authenticate(self, auth_url, api_key, region, username, password,
+                     tenant_id):
         """Return keystone authentication client"""
         try:
-            return keystone.ApiKeyClient(
+            return keystone.Client(
                 auth_url=util.strip_url(auth_url),
                 api_key=api_key,
+                password=password,
                 region=region,
                 username=username,
                 tenant_id=tenant_id)
@@ -151,6 +158,7 @@ class Lava(object):
                                        self._api_key,
                                        self._region,
                                        self._username,
+                                       self._password,
                                        self._tenant_id)
 
         if self.token == old_token:

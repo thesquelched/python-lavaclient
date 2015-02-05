@@ -33,9 +33,8 @@ class ApiKeyAuth(v2_auth.Auth):
 
     """Keystone v2 API Key Authenticator"""
 
-    def __init__(self, auth_url, api_key, username, tenant_id):
-        super(ApiKeyAuth, self).__init__(auth_url,
-                                         tenant_id=tenant_id)
+    def __init__(self, auth_url, api_key, username=None, tenant_id=None):
+        super(ApiKeyAuth, self).__init__(auth_url, tenant_id=tenant_id)
         self.api_key = api_key
         self.username = username
 
@@ -48,14 +47,31 @@ class ApiKeyAuth(v2_auth.Auth):
         }
 
 
-class ApiKeyClient(v2_client.Client):
+class PasswordAuth(v2_auth.Password):
+
+    def __init__(self, auth_url, api_key=None, **kwargs):
+        super(PasswordAuth, self).__init__(auth_url, **kwargs)
+
+    def get_auth_data(self, *args, **kwargs):
+        data = super(PasswordAuth, self).get_auth_data(*args, **kwargs)
+        data.update({
+            "RAX-AUTH:domain": {
+                "name": "Rackspace"
+            }
+        })
+
+        return data
+
+
+class Client(v2_client.Client):
 
     def __init__(self, api_key=None, **kwargs):
         """Initialize a new client for the Keystone v2.0 API using an API
-        key."""
+        key or password."""
 
-        if api_key is None:
-            raise ValueError(_("Cannot authenticate without an api_key"))
+        if api_key is None and kwargs.get('password') is None:
+            raise ValueError(_(
+                "Cannot authenticate without an api_key or password"))
 
         if kwargs.get('username') is None:
             raise ValueError(_("Cannot authenticate without a username"))
@@ -65,34 +81,50 @@ class ApiKeyClient(v2_client.Client):
 
         self._api_key = api_key
 
-        super(ApiKeyClient, self).__init__(**kwargs)
+        super(Client, self).__init__(**kwargs)
 
     def get_raw_token_from_identity_service(self, auth_url, username=None,
                                             api_key=None, tenant_id=None,
-                                            project_id=None, **kwargs):
+                                            password=None, project_id=None,
+                                            **kwargs):
         """Authenticate against the v2 Identity API using an API key.
 
         :returns: access.AccessInfo if authentication was successful.
         :raises keystoneclient.AuthorizationFailure: if unable to authenticate
             or validate the existing authorization token
         """
+        if api_key is None:
+            api_key = self._api_key
+
+        if password is None:
+            password = self.password
+
         try:
             if auth_url is None:
                 raise ValueError(_("Cannot authenticate without an auth_url"))
 
-            plugin = ApiKeyAuth(auth_url,
-                                api_key or self._api_key,
-                                username=username or self.username,
-                                tenant_id=project_id or tenant_id)
+            if api_key is not None:
+                plugin = ApiKeyAuth(auth_url,
+                                    api_key,
+                                    username=username or self.username,
+                                    tenant_id=project_id or tenant_id)
+            elif password is not None:
+                plugin = PasswordAuth(auth_url,
+                                      username=username or self.username,
+                                      password=password,
+                                      tenant_id=project_id or tenant_id)
+            else:
+                raise ValueError(_(
+                    "Cannot authenticate without an api_key or password"))
 
             return plugin.get_auth_ref(self.session)
         except (AuthorizationFailure, Unauthorized) as exc:
             LOG.debug("Authorization Failed.", exc_info=exc)
             raise
         except EndpointNotFound as exc:
-            msg = (
-                _('There was no suitable authentication url for this request'))
+            msg = _(
+                'There was no suitable authentication url for this request')
             six.raise_from(AuthorizationFailure(msg), exc)
         except Exception as exc:
-            msg = _("Authorization Failed: %s".format(exc))
+            msg = _("Authorization Failed: {0}".format(exc))
             six.raise_from(AuthorizationFailure(msg), exc)

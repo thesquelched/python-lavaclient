@@ -71,7 +71,20 @@ def test_auth_client(post, auth_response):
     post.return_value = MagicMock(
         json=MagicMock(return_value=auth_response)
     )
-    client = Lava('apikey', 'username', 'region', tenant_id='tenantId')
+    client = Lava('username', 'region', api_key='apikey', tenant_id='tenantId')
+
+    assert post.call_count == 1
+    assert client.token == 'ab48a9efdfedb23ty3494'
+    assert client.endpoint == 'publicURL/v2/tenantId'
+
+
+@patch('keystoneclient.session.Session.post')
+def test_auth_password(post, auth_response):
+    post.return_value = MagicMock(
+        json=MagicMock(return_value=auth_response)
+    )
+    client = Lava('username', 'region', password='password',
+                  tenant_id='tenantId')
 
     assert post.call_count == 1
     assert client.token == 'ab48a9efdfedb23ty3494'
@@ -85,7 +98,8 @@ def test_auth_endpoint(post, get_endpoint, auth_response):
         json=MagicMock(return_value=auth_response)
     )
 
-    client1 = Lava('apikey', 'username', 'region', endpoint='v2/tenant')
+    client1 = Lava('username', 'region', api_key='apikey',
+                   endpoint='v2/tenant')
 
     assert get_endpoint.call_count == 0
     assert post.call_count == 1
@@ -100,64 +114,65 @@ def test_auth_endpoint_validation(post, get_endpoint, auth_response):
         json=MagicMock(return_value=auth_response)
     )
 
-    assert Lava('apikey',
-                'username',
+    assert Lava('username',
                 'region',
+                api_key='apikey',
                 endpoint='v2/tenant').endpoint == 'v2/tenant'
-    assert Lava('apikey',
-                'username',
+    assert Lava('username',
                 'region',
+                api_key='apikey',
                 endpoint='v2',
                 tenant_id='tenant').endpoint == 'v2/tenant'
-    assert Lava('apikey',
-                'username',
+    assert Lava('username',
                 'region',
+                api_key='apikey',
                 endpoint='v2/tenant',
                 tenant_id='tenant').endpoint == 'v2/tenant'
 
-    pytest.raises(error.InvalidError, Lava, 'apikey', 'username', 'region',
-                  endpoint='foo')
-    pytest.raises(error.InvalidError, Lava, 'apikey', 'username', 'region',
-                  endpoint='v2/something', tenant_id='tenant')
-    pytest.raises(error.InvalidError, Lava, 'apikey', 'username', 'region',
-                  endpoint='foo', tenant_id='tenant')
+    pytest.raises(error.InvalidError, Lava, 'username',
+                  'region', api_key='apikey', endpoint='foo')
+    pytest.raises(error.InvalidError, Lava, 'username',
+                  'region', api_key='apikey', endpoint='foo',
+                  tenant_id='tenant')
 
 
 def test_auth_errors(auth_response):
-    pytest.raises(error.InvalidError, Lava, None, 'username', 'region')
-    pytest.raises(error.InvalidError, Lava, 'apikey', None, 'region')
-    pytest.raises(error.InvalidError, Lava, 'apikey', 'username', None)
+    pytest.raises(error.InvalidError, Lava, 'username', 'region')
+    pytest.raises(error.InvalidError, Lava, None, 'region',
+                  api_key='apikey')
+    pytest.raises(error.InvalidError, Lava, 'username', None,
+                  api_key='apikey')
 
     with patch('keystoneclient.session.Session.post') as post:
         post.return_value = MagicMock(status_code=400)
-        pytest.raises(error.AuthenticationError, Lava, 'apikey', 'username',
-                      'region')
+        pytest.raises(error.AuthenticationError,
+                      Lava, 'username', 'region', api_key='apikey')
 
     with patch('keystoneclient.session.Session.post') as post:
         post.side_effect = exceptions.Unauthorized
-        pytest.raises(error.AuthorizationError, Lava, 'apikey', 'username',
-                      'region')
+        pytest.raises(error.AuthorizationError,
+                      Lava, 'username', 'region', api_key='apikey')
 
     with patch('keystoneclient.session.Session.post') as post:
         post.side_effect = exceptions.EndpointNotFound
-        pytest.raises(error.AuthenticationError, Lava, 'apikey', 'username',
-                      'region')
+        pytest.raises(error.AuthenticationError,
+                      Lava, 'username', 'region', api_key='apikey')
 
     with patch('keystoneclient.session.Session.post') as post:
         post.return_value = MagicMock(
             json=MagicMock(return_value=auth_response)
         )
-        pytest.raises(error.InvalidError, Lava, 'apikey', 'username',
-                      'badregion')
+        pytest.raises(error.InvalidError,
+                      Lava, 'username', 'badregion', api_key='apikey')
 
 
 def test_apikey_client_errors():
-    pytest.raises(ValueError, keystone.ApiKeyClient,
+    pytest.raises(ValueError, keystone.Client,
                   api_key=None, username='username', region='region')
-    pytest.raises(ValueError, keystone.ApiKeyClient,
+    pytest.raises(ValueError, keystone.Client,
                   api_key='api_key', username=None, region='region')
-    pytest.raises(ValueError, keystone.ApiKeyClient,
+    pytest.raises(ValueError, keystone.Client,
                   api_key='api_key', username='username', region=None)
-    pytest.raises(exceptions.AuthorizationFailure, keystone.ApiKeyClient,
+    pytest.raises(exceptions.AuthorizationFailure, keystone.Client,
                   api_key='api_key', username='username', region='region',
                   auth_url=None)
