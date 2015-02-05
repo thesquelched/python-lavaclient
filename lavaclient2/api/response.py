@@ -33,6 +33,16 @@ class IdReprMixin(object):
         return "{0}(id='{1}')".format(self.__class__.__name__, self.id)
 
 
+class Link(Config):
+
+    rel = Field(six.text_type, required=True)
+    href = Field(six.text_type, required=True)
+
+    def __repr__(self):
+        return "Link(rel='{0}', href='{1}')".format(
+            self.rel, self.href)
+
+
 class NodeGroup(Config, IdReprMixin):
 
     id = Field(six.text_type, required=True,
@@ -50,18 +60,9 @@ class Cluster(Config, IdReprMixin):
     name = Field(six.text_type)
     status = Field(six.text_type, required=True)
     stack_id = Field(six.text_type, required=True)
+    links = ListField(Link, required=True)
 
     node_groups = ListField(NodeGroup, default=[])
-
-
-class Link(Config):
-
-    rel = Field(six.text_type, required=True)
-    href = Field(six.text_type, required=True)
-
-    def __repr__(self):
-        return "Link(rel='{0}', href='{1}')".format(
-            self.rel, self.href)
 
 
 class Flavor(Config, IdReprMixin):
@@ -94,6 +95,19 @@ class StackService(Config):
     modes = ListField(six.text_type)
 
 
+class DistroServiceMode(Config):
+
+    name = Field(six.text_type, required=True)
+
+
+class DistroService(Config):
+
+    __inherits__ = [BaseService]
+
+    description = Field(six.text_type, required=True)
+    modes = ListField(DistroServiceMode)
+
+
 class Stack(Config, IdReprMixin):
 
     id = Field(six.text_type, required=True)
@@ -101,3 +115,11 @@ class Stack(Config, IdReprMixin):
     distro = Field(six.text_type, required=True)
     services = ListField(StackService, required=True)
     node_groups = ListField(NodeGroup)
+
+
+class Distro(Config, IdReprMixin):
+
+    id = Field(six.text_type, required=True)
+    name = Field(six.text_type, required=True)
+    version = Field(six.text_type, required=True)
+    services = ListField(DistroService, required=True)

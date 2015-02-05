@@ -22,7 +22,7 @@ from lavaclient2 import keystone
 from lavaclient2 import util
 from lavaclient2 import constants
 from lavaclient2 import error
-from lavaclient2.api import clusters, limits, flavors, stacks
+from lavaclient2.api import clusters, limits, flavors, stacks, distros
 
 
 LOG = logging.getLogger(constants.LOGGER_NAME)
@@ -97,6 +97,7 @@ class Lava(object):
         self.limits = limits.Resource(self)
         self.flavors = flavors.Resource(self)
         self.stacks = stacks.Resource(self)
+        self.distros = distros.Resource(self)
 
     def _validate_endpoint(self, endpoint, tenant_id):
         """Validate that the endpoint ends with v2/<tenant_id>"""

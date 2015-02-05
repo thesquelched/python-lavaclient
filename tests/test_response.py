@@ -15,7 +15,7 @@ def node_group():
 
 
 @pytest.fixture
-def cluster_response(node_group):
+def cluster_response(node_group, link_response):
     return {
         'id': 'cluster_id',
         'name': 'cluster_name',
@@ -23,7 +23,8 @@ def cluster_response(node_group):
         'updated': None,
         'status': 'PENDING',
         'stack_id': 'stack_id',
-        'node_groups': [node_group]
+        'node_groups': [node_group],
+        'links': [link_response],
     }
 
 
