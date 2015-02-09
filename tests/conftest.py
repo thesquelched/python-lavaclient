@@ -15,9 +15,9 @@ def lavaclient():
                 )
             )
         )
-        return client.Lava('api_key',
-                           'username',
+        return client.Lava('username',
                            'region',
+                           api_key='api_key',
                            auth_url='auth_url',
                            tenant_id='tenant_id',
                            verify_ssl=False)

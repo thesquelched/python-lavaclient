@@ -16,6 +16,7 @@ __version__ = '.'.join(map(str, __version_info__))
 
 import logging
 from lavaclient2 import constants
+from lavaclient2.client import Lava
 
 
 # Attempt to import the NullHandler (not available in py2.6)
@@ -29,3 +30,6 @@ except ImportError:  # pragma: no cover
 
 LOG = logging.getLogger(constants.LOGGER_NAME)
 LOG.addHandler(NullHandler())
+
+
+__all__ = ['Lava']
