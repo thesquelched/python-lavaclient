@@ -33,7 +33,7 @@ def read_version():
     path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
         'lavaclient2',
-        '__init__.py'
+        '_version.py'
     )
     with open(path) as f:
         exec(f.read())
