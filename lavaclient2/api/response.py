@@ -49,20 +49,13 @@ class Node(Config, IdReprMixin):
     name = Field(six.text_type, required=True)
     created = Field(DateTime, required=True)
     updated = Field(DateTime, required=True)
-    deleted = Field(DateTime, required=True)
     role = Field(six.text_type, required=True)
     status = Field(six.text_type, required=True)
     ip = Field(six.text_type, required=True)
     fqdn = Field(six.text_type, required=True)
-    server_id = Field(six.text_type, required=True)
     flavor_id = Field(six.text_type, required=True)
     private_ip = Field(six.text_type, required=True)
-    cluster_id = Field(six.text_type, required=True)
-    user_id = Field(six.text_type, required=True)
-    tenant_id = Field(six.text_type, required=True)
-    hypervisor_id = Field(six.text_type, required=True)
     node_group = Field(six.text_type, required=True)
-    image_id = Field(six.text_type, required=True)
 
 
 class NodeGroup(Config, IdReprMixin):
