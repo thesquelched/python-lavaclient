@@ -34,36 +34,33 @@ class Lava(object):
 
     def __init__(self,
                  username,
-                 region,
+                 region=None,
                  password=None,
+                 token=None,
                  api_key=None,
                  auth_url=None,
                  tenant_id=None,
                  endpoint=None,
                  verify_ssl=None):
         """
-        Lava(username, region, [api_key, password, auth_url, tenant_id,
-             endpoint])
-
         Create a Lava API client using your API key and username.
         Authentication is handled via Keystone.
 
         :param username: Username string
         :param region: Region identifier, e.g. 'DFW'
         :param api_key: API key string (optional)
+        :param token: API token from previous authentication (optional)
         :param password: Keystone auth password (optional)
         :param auth_url: Override Keystone authentication url (optional)
         :param tenant_id: Your Rackspace tenant ID (optional)
         :param endpoint: Override Cloud Big Data endpoint URL (optional)
         """
-        if api_key is None and password is None:
-            raise error.InvalidError("One of api_key or password is required")
+        if not any((api_key, password, token)):
+            raise error.InvalidError("One of api_key, token, or password is "
+                                     "required")
 
-        if username is None:
-            raise error.InvalidError("Missing username")
-
-        if region is None:
-            raise error.InvalidError('Missing region')
+        if not endpoint and not region:
+            raise error.InvalidError('One of endpoint or region is required')
 
         # Ensure tenant_id is unicode
         if tenant_id is not None:
@@ -75,17 +72,27 @@ class Lava(object):
         self._auth_url = auth_url
         self._region = region
         self._api_key = api_key
+        self._token = token
         self._password = password
         self._username = username
         self._tenant_id = tenant_id
         self._verify_ssl = verify_ssl
 
-        self._auth = self.authenticate(auth_url,
-                                       api_key,
-                                       region,
-                                       username,
-                                       password,
-                                       tenant_id)
+        if token and not endpoint:
+            raise error.InvalidError(
+                'Token must be accompanied by a hard-coded endpoint')
+        elif token:
+            self._auth = None
+        else:
+            if username is None:
+                raise error.InvalidError("Missing username")
+
+            self._auth = self.authenticate(auth_url,
+                                           api_key,
+                                           region,
+                                           username,
+                                           password,
+                                           tenant_id)
 
         if endpoint is None:
             self._endpoint = self._get_endpoint(region, tenant_id)
@@ -155,6 +162,10 @@ class Lava(object):
     def _reauthenticate(self):
         """Reauthenticate with keystone, assuming our token is no longer
         valid"""
+        if self._token:
+            raise error.AuthenticationError(
+                'Can not reauthenticate with hard-coded token')
+
         LOG.info('Reauthenticating via keystone')
 
         old_token = self.token
@@ -170,7 +181,7 @@ class Lava(object):
 
     @property
     def token(self):
-        return self._auth.auth_token
+        return self._token or self._auth.auth_token
 
     @property
     def endpoint(self):

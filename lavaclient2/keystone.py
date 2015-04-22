@@ -47,10 +47,9 @@ class ApiKeyAuth(v2_auth.Auth):
         }
 
 
-class PasswordAuth(v2_auth.Password):
-
-    def __init__(self, auth_url, api_key=None, **kwargs):
-        super(PasswordAuth, self).__init__(auth_url, **kwargs)
+class RaxAuthMixin(object):
+    """Mixin class for Keystone authentication plugins which injects
+    rackspace-specific data into authentication requests"""
 
     def get_auth_data(self, *args, **kwargs):
         data = super(PasswordAuth, self).get_auth_data(*args, **kwargs)
@@ -63,25 +62,42 @@ class PasswordAuth(v2_auth.Password):
         return data
 
 
+class PasswordAuth(v2_auth.Password, RaxAuthMixin):
+    pass
+
+
 class Client(v2_client.Client):
 
     def __init__(self, api_key=None, **kwargs):
         """Initialize a new client for the Keystone v2.0 API using an API
         key or password."""
 
-        if api_key is None and kwargs.get('password') is None:
+        if not any((api_key, kwargs.get('password'))):
             raise ValueError(_(
                 "Cannot authenticate without an api_key or password"))
 
         if kwargs.get('username') is None:
             raise ValueError(_("Cannot authenticate without a username"))
 
-        if kwargs.get('region') is None:
-            raise ValueError(_("Cannot authenticate without a region"))
-
         self._api_key = api_key
 
         super(Client, self).__init__(**kwargs)
+
+    def get_auth_plugin(self, auth_url, api_key, username, password,
+                        project_id, tenant_id):
+        if api_key is not None:
+            return ApiKeyAuth(auth_url,
+                              api_key,
+                              username=username or self.username,
+                              tenant_id=project_id or tenant_id)
+        if password is not None:
+            return PasswordAuth(auth_url,
+                                username=username or self.username,
+                                password=password,
+                                tenant_id=project_id or tenant_id)
+
+        raise ValueError(_(
+            "Cannot authenticate without an api_key or password"))
 
     def get_raw_token_from_identity_service(self, auth_url, username=None,
                                             api_key=None, tenant_id=None,
@@ -103,19 +119,8 @@ class Client(v2_client.Client):
             if auth_url is None:
                 raise ValueError(_("Cannot authenticate without an auth_url"))
 
-            if api_key is not None:
-                plugin = ApiKeyAuth(auth_url,
-                                    api_key,
-                                    username=username or self.username,
-                                    tenant_id=project_id or tenant_id)
-            elif password is not None:
-                plugin = PasswordAuth(auth_url,
-                                      username=username or self.username,
-                                      password=password,
-                                      tenant_id=project_id or tenant_id)
-            else:
-                raise ValueError(_(
-                    "Cannot authenticate without an api_key or password"))
+            plugin = self.get_auth_plugin(auth_url, api_key, username,
+                                          password, project_id, tenant_id)
 
             return plugin.get_auth_ref(self.session)
         except (AuthorizationFailure, Unauthorized) as exc:
