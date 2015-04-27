@@ -125,7 +125,6 @@ class DistroService(Config):
     components = ListField(dict, required=True)
 
 
-
 class ResourceLimits(Config):
 
     max_count = Field(int, required=True)
@@ -134,7 +133,6 @@ class ResourceLimits(Config):
 
 
 class StackNodeGroup(Config, IdReprMixin):
-
 
     id = Field(six.text_type, required=True)
     flavor_id = Field(six.text_type, required=True)
