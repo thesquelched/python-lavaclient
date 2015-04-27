@@ -22,10 +22,10 @@ def test_list(lavaclient, distro_fixture):
 def test_get(lavaclient, distro_fixture):
     with patch.object(lavaclient, '_request') as request:
         request.return_value = {'distro': distro_fixture}
-        resp = lavaclient.distros.get('hadoop1-15')
+        resp = lavaclient.distros.get('HDP2.2')
 
-        assert isinstance(resp, response.Distro)
+        assert isinstance(resp, response.DistroDetail)
 
     with patch.object(lavaclient, '_request') as request:
         request.return_value = {}
-        pytest.raises(error.ApiError, lavaclient.distros.get, 'hadoop1-15')
+        pytest.raises(error.ApiError, lavaclient.distros.get, 'HDP2.2')

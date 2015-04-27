@@ -17,15 +17,3 @@ def test_list(lavaclient, flavor_response):
     with patch.object(lavaclient, '_request') as request:
         request.return_value = {}
         pytest.raises(error.ApiError, lavaclient.flavors.list)
-
-
-def test_get(lavaclient, flavor_response):
-    with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'flavor': flavor_response}
-        resp = lavaclient.flavors.get('hadoop1-15')
-
-        assert isinstance(resp, response.Flavor)
-
-    with patch.object(lavaclient, '_request') as request:
-        request.return_value = {}
-        pytest.raises(error.ApiError, lavaclient.flavors.get, 'hadoop1-15')

@@ -16,7 +16,7 @@ def absolute_limit():
 @pytest.fixture
 def absolute_limits(absolute_limit):
     return {
-        'nodeCount': absolute_limit,
+        'node_count': absolute_limit,
         'ram': absolute_limit,
         'disk': absolute_limit,
         'vcpus': absolute_limit,

@@ -2,7 +2,8 @@ import six
 import logging
 from figgis import Config, ListField, Field
 
-from lavaclient2.api import response, resource
+from lavaclient2.api import resource
+from lavaclient2.api.response import Cluster, ClusterDetail
 from lavaclient2 import constants, validators
 
 
@@ -17,14 +18,14 @@ class ClustersResponse(Config):
 
     """Response from /clusters"""
 
-    clusters = ListField(response.Cluster, required=True)
+    clusters = ListField(Cluster, required=True)
 
 
 class ClusterResponse(Config):
 
     """Response from /clusters/<cluster_id>"""
 
-    cluster = Field(response.Cluster, required=True)
+    cluster = Field(ClusterDetail, required=True)
 
 
 ######################################################################
@@ -41,10 +42,12 @@ class ClusterCreateNodeGroups(Config):
 
 class ClusterCreateRequest(Config):
 
-    """POST data to create clsuter"""
+    """POST data to create cluster"""
 
     name = Field(six.text_type, required=True,
                  validator=validators.Length(min=1, max=255))
+    username = Field(six.text_type, required=True,
+                     validator=validators.Length(min=2, max=255))
     keypair_name = Field(six.text_type, required=True,
                          validator=validators.Length(min=1, max=255))
     stack_id = Field(six.text_type, required=True)
@@ -65,7 +68,7 @@ class Resource(resource.Resource):
 
         :returns: List of Cluster objects
         """
-        return self.parse_response(
+        return self._parse_response(
             self._client._get('clusters'),
             ClustersResponse,
             wrapper='clusters')
@@ -77,16 +80,18 @@ class Resource(resource.Resource):
         :param cluster_id: Cluster ID
         :returns: Cluster object
         """
-        return self.parse_response(
+        return self._parse_response(
             self._client._get('clusters/' + six.text_type(cluster_id)),
             ClusterResponse,
             wrapper='cluster')
 
-    def create(self, name, keypair_name, stack_id, node_groups=None):
+    def create(self, name, username, keypair_name, stack_id,
+               node_groups=None):
         """
         Create a cluster
 
         :param name: Cluster name
+        :param username: User to create on the cluster
         :param keypair_name: SSH keypair name
         :param stack_id: Valid stack identifier
         :param node_groups: List of node groups for the cluster
@@ -94,17 +99,18 @@ class Resource(resource.Resource):
         """
         data = dict(
             name=name,
+            username=username,
             keypair_name=keypair_name,
             stack_id=stack_id
         )
         if node_groups:
             data.update(node_groups=node_groups)
 
-        request_data = self.marshal_request(
+        request_data = self._marshal_request(
             data, ClusterCreateRequest, wrapper='cluster')
 
-        return self.parse_response(
-            self._client._post('clusters', data=request_data),
+        return self._parse_response(
+            self._client._post('clusters', json=request_data),
             ClusterResponse,
             wrapper='cluster')
 
@@ -115,7 +121,4 @@ class Resource(resource.Resource):
         :param cluster_id: Cluster ID
         :returns: Same as :func:`get`
         """
-        return self.parse_response(
-            self._client._delete('clusters/' + six.text_type(cluster_id)),
-            ClusterResponse,
-            wrapper='cluster')
+        self._client._delete('clusters/' + six.text_type(cluster_id))

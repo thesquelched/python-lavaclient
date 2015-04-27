@@ -2,9 +2,10 @@ import logging
 import six
 from figgis import Config, ListField, Field
 
-from lavaclient2.api import response, resource
+from lavaclient2.api import resource
+from lavaclient2.api.response import Stack, StackDetail
 from lavaclient2 import constants
-from lavaclient2.validators import Length, List
+from lavaclient2.validators import Length, List, Range
 
 
 LOG = logging.getLogger(constants.LOGGER_NAME)
@@ -16,24 +17,38 @@ LOG = logging.getLogger(constants.LOGGER_NAME)
 
 class StackResponse(Config):
 
-    stack = Field(response.Stack, required=True)
+    stack = Field(StackDetail, required=True)
 
 
 class StacksResponse(Config):
 
-    stacks = ListField(response.Stack, required=True)
+    stacks = ListField(Stack, required=True)
 
 
 ######################################################################
 # API Requests
 ######################################################################
 
-class CreateStackService(Config):
+class Service(Config):
 
     name = Field(six.text_type, required=True,
                  validator=Length(min=1, max=255))
     modes = ListField(six.text_type,
                       validator=List(Length(min=1, max=255)))
+
+
+class Component(Config):
+
+    name = Field(six.text_type, required=True,
+                 validator=Length(min=1, max=255))
+
+
+class NodeGroup(Config):
+
+    id = Field(six.text_type, required=True, validator=Length(min=1, max=36))
+    flavor_id = Field(six.text_type)
+    count = Field(int, validator=Range(min=0, max=100))
+    components = ListField(Component)
 
 
 class CreateStackRequest(Config):
@@ -42,8 +57,8 @@ class CreateStackRequest(Config):
                  validator=Length(min=1, max=255))
     distro = Field(six.text_type, required=True,
                    validator=Length(min=1, max=255))
-    services = ListField(CreateStackService, required=True)
-    node_groups = ListField(response.NodeGroup)
+    services = ListField(Service, required=True)
+    node_groups = ListField(NodeGroup)
 
 
 ######################################################################
@@ -60,7 +75,7 @@ class Resource(resource.Resource):
 
         :returns: list of Stack objects
         """
-        return self.parse_response(
+        return self._parse_response(
             self._client._get('stacks'),
             StacksResponse,
             wrapper='stacks')
@@ -71,12 +86,12 @@ class Resource(resource.Resource):
 
         :returns: A Stack object
         """
-        return self.parse_response(
+        return self._parse_response(
             self._client._get('stacks/{0}'.format(stack_id)),
             StackResponse,
             wrapper='stack')
 
-    def create(self, name, distro, services=None, node_groups=None):
+    def create(self, name, distro, services, node_groups=None):
         """
         Create a stack
 
@@ -90,15 +105,15 @@ class Resource(resource.Resource):
         data = dict(
             name=name,
             distro=distro,
-            services=services or [],
+            services=services,
         )
         if node_groups:
             data.update(node_groups=node_groups)
 
-        request_data = self.marshal_request(
+        request_data = self._marshal_request(
             data, CreateStackRequest, wrapper='stack')
 
-        return self.parse_response(
+        return self._parse_response(
             self._client._post('stacks', data=request_data),
             StackResponse,
             wrapper='stack')

@@ -1,7 +1,8 @@
 import logging
 from figgis import Config, ListField, Field
 
-from lavaclient2.api import response, resource
+from lavaclient2.api import resource
+from lavaclient2.api.response import Distro, DistroDetail
 from lavaclient2 import constants
 
 
@@ -12,14 +13,14 @@ LOG = logging.getLogger(constants.LOGGER_NAME)
 # API Responses
 ######################################################################
 
-class DistroResponse(Config, response.IdReprMixin):
+class DistroResponse(Config):
 
-    distro = Field(response.Distro, required=True)
+    distro = Field(DistroDetail, required=True)
 
 
 class DistrosResponse(Config):
 
-    distros = ListField(response.Distro, required=True)
+    distros = ListField(Distro, required=True)
 
 
 ######################################################################
@@ -36,7 +37,7 @@ class Resource(resource.Resource):
 
         :returns: list of Distro objects
         """
-        return self.parse_response(
+        return self._parse_response(
             self._client._get('/distros'),
             DistrosResponse,
             wrapper='distros')
@@ -45,7 +46,7 @@ class Resource(resource.Resource):
         """
         Get a specific distro
         """
-        return self.parse_response(
+        return self._parse_response(
             self._client._get('/distros/{0}'.format(distro_id)),
             DistroResponse,
             wrapper='distro')

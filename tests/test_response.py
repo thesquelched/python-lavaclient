@@ -5,16 +5,6 @@ from lavaclient2.api import response
 
 
 @pytest.fixture
-def node_group():
-    return {
-        'id': 'node_id',
-        'count': 1,
-        'flavor_id': 'hadoop1-60',
-        'components': {},
-    }
-
-
-@pytest.fixture
 def cluster_response(node_group, link_response):
     return {
         'id': 'cluster_id',
@@ -23,8 +13,8 @@ def cluster_response(node_group, link_response):
         'updated': None,
         'status': 'PENDING',
         'stack_id': 'stack_id',
-        'node_groups': [node_group],
         'links': [link_response],
+        'cbd_version': 1,
     }
 
 
@@ -37,14 +27,6 @@ def test_cluster(cluster_response):
     assert cluster.updated is None
     assert cluster.status == 'PENDING'
     assert cluster.stack_id == 'stack_id'
-
-    assert len(cluster.node_groups) == 1
-
-    group = cluster.node_groups[0]
-    assert group.id == 'node_id'
-    assert group.count == 1
-    assert group.flavor_id == 'hadoop1-60'
-    assert group.components == {}
 
 
 def test_cluster_repr(cluster_response):

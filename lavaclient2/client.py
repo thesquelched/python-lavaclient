@@ -22,7 +22,8 @@ from lavaclient2 import keystone
 from lavaclient2 import util
 from lavaclient2 import constants
 from lavaclient2 import error
-from lavaclient2.api import clusters, limits, flavors, stacks, distros
+from lavaclient2.api import (clusters, limits, flavors, stacks, distros,
+                             workloads, scripts)
 
 
 LOG = logging.getLogger(constants.LOGGER_NAME)
@@ -49,7 +50,8 @@ class Lava(object):
         :param username: Username string
         :param region: Region identifier, e.g. 'DFW'
         :param api_key: API key string (optional)
-        :param token: API token from previous authentication (optional)
+        :param token: API token from previous authentication (optional); must
+                      be specified alongside `endpoint`
         :param password: Keystone auth password (optional)
         :param auth_url: Override Keystone authentication url (optional)
         :param tenant_id: Your Rackspace tenant ID (optional)
@@ -72,11 +74,11 @@ class Lava(object):
         self._auth_url = auth_url
         self._region = region
         self._api_key = api_key
-        self._token = token
         self._password = password
         self._username = username
         self._tenant_id = tenant_id
         self._verify_ssl = verify_ssl
+        self._token = token
 
         if token and not endpoint:
             raise error.InvalidError(
@@ -105,6 +107,8 @@ class Lava(object):
         self.flavors = flavors.Resource(self)
         self.stacks = stacks.Resource(self)
         self.distros = distros.Resource(self)
+        self.workloads = workloads.Resource(self)
+        self.scripts = scripts.Resource(self)
 
     def _validate_endpoint(self, endpoint, tenant_id):
         """Validate that the endpoint ends with v2/<tenant_id>"""
@@ -233,7 +237,12 @@ class Lava(object):
             return resp.json()
         except requests.exceptions.HTTPError as exc:
             if exc.response.status_code != requests.codes.unauthorized:
-                six.raise_from(error.RequestError(exc), exc)
+                try:
+                    msg = exc.response.json()['fault']['message']
+                except (KeyError, ValueError):
+                    msg = exc.response.text or str(exc)
+
+                six.raise_from(error.RequestError(msg), exc)
 
             if reauthenticate:
                 self._reauthenticate()

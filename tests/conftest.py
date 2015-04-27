@@ -46,10 +46,10 @@ def flavor_response(link_response):
 @pytest.fixture
 def node_group():
     return {
-        'id': 'node_id',
+        'id': 'id',
         'count': 1,
         'flavor_id': 'hadoop1-60',
-        'components': {},
+        'components': [{'name': 'component'}],
     }
 
 

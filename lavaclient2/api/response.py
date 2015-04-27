@@ -11,8 +11,8 @@
 #    under the License.
 
 
-from figgis import Config, Field, ListField
 import six
+from figgis import Config, Field, ListField
 from dateutil.parser import parse as dateparse
 from datetime import datetime
 
@@ -64,20 +64,36 @@ class NodeGroup(Config, IdReprMixin):
                validator=Length(min=1, max=255))
     count = Field(int, validator=Range(min=1, max=100))
     flavor_id = Field(six.text_type)
-    components = Field(dict, default={})
+    components = ListField(dict, default={})
 
 
 class Cluster(Config, IdReprMixin):
 
     id = Field(six.text_type, required=True)
     created = Field(DateTime, required=True)
-    updated = Field(DateTime)
-    name = Field(six.text_type)
+    updated = Field(DateTime, required=True)
+    name = Field(six.text_type, required=True)
     status = Field(six.text_type, required=True)
     stack_id = Field(six.text_type, required=True)
+    cbd_version = Field(int, required=True)
     links = ListField(Link, required=True)
 
-    node_groups = ListField(NodeGroup, default=[])
+
+class ClusterScript(Config):
+
+    id = Field(six.text_type, required=True)
+    name = Field(six.text_type, required=True)
+    status = Field(six.text_type, required=True)
+
+
+class ClusterDetail(Config, IdReprMixin):
+
+    __inherits__ = [Cluster]
+
+    node_groups = ListField(NodeGroup, required=True)
+    username = Field(six.text_type, required=True)
+    scripts = ListField(ClusterScript, required=True)
+    progress = Field(float, required=True)
 
 
 class Flavor(Config, IdReprMixin):
@@ -96,20 +112,6 @@ class ServiceComponent(Config):
     mode = Field(six.text_type)
 
 
-class BaseService(Config):
-
-    name = Field(six.text_type, required=True)
-    version = Field(six.text_type, required=True)
-    components = ListField(ServiceComponent, required=True)
-
-
-class StackService(Config):
-
-    __inherits__ = [BaseService]
-
-    modes = ListField(six.text_type)
-
-
 class DistroServiceMode(Config):
 
     name = Field(six.text_type, required=True)
@@ -117,19 +119,51 @@ class DistroServiceMode(Config):
 
 class DistroService(Config):
 
-    __inherits__ = [BaseService]
-
+    name = Field(six.text_type, required=True)
+    version = Field(six.text_type, required=True)
     description = Field(six.text_type, required=True)
-    modes = ListField(DistroServiceMode)
+    components = ListField(dict, required=True)
+
+
+
+class ResourceLimits(Config):
+
+    max_count = Field(int, required=True)
+    min_count = Field(int, required=True)
+    min_ram = Field(int, required=True)
+
+
+class StackNodeGroup(Config, IdReprMixin):
+
+
+    id = Field(six.text_type, required=True)
+    flavor_id = Field(six.text_type, required=True)
+    resource_limits = Field(ResourceLimits, required=True)
+    count = Field(int, required=True)
+    components = ListField(dict, required=True)
+
+
+class StackService(Config):
+
+    name = Field(six.text_type, required=True)
+    modes = ListField(six.text_type, required=True)
 
 
 class Stack(Config, IdReprMixin):
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
+    links = ListField(Link, required=True)
     distro = Field(six.text_type, required=True)
     services = ListField(StackService, required=True)
-    node_groups = ListField(NodeGroup)
+
+
+class StackDetail(Stack):
+
+    __inherits__ = [Stack]
+
+    created = Field(DateTime, required=True)
+    node_groups = ListField(StackNodeGroup, required=True)
 
 
 class Distro(Config, IdReprMixin):
@@ -137,4 +171,22 @@ class Distro(Config, IdReprMixin):
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
     version = Field(six.text_type, required=True)
+
+
+class DistroDetail(Config, IdReprMixin):
+
+    __inherits__ = [Distro]
+
     services = ListField(DistroService, required=True)
+
+
+class Script(Config, IdReprMixin):
+
+    id = Field(six.text_type, required=True)
+    name = Field(six.text_type, required=True)
+    type = Field(six.text_type, required=True)
+    url = Field(six.text_type, required=True)
+    is_public = Field(bool, required=True)
+    updated = Field(DateTime, required=True)
+    created = Field(DateTime, required=True)
+    links = ListField(Link, required=True)
