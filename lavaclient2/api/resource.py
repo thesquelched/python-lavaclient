@@ -2,10 +2,11 @@ import logging
 import figgis
 
 from lavaclient2 import error
-from lavaclient2 import constants
+from lavaclient2.log import NullHandler
 
 
-LOG = logging.getLogger(constants.LOGGER_NAME)
+LOG = logging.getLogger(__name__)
+LOG.addHandler(NullHandler())
 
 
 def _prune_marshaled_data(marshaled, original_data):

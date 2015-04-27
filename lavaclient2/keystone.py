@@ -23,10 +23,11 @@ from keystoneclient.auth.identity import v2 as v2_auth
 from keystoneclient.exceptions import (
     AuthorizationFailure, Unauthorized, EndpointNotFound)
 
-from lavaclient2 import constants
+from lavaclient2.log import NullHandler
 
 
-LOG = logging.getLogger(constants.LOGGER_NAME)
+LOG = logging.getLogger(__name__)
+LOG.addHandler(NullHandler())
 
 
 class ApiKeyAuth(v2_auth.Auth):

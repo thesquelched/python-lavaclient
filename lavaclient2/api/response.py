@@ -11,12 +11,14 @@
 #    under the License.
 
 
+import textwrap
 import six
 from figgis import Config, Field, ListField
 from dateutil.parser import parse as dateparse
 from datetime import datetime
 
 from lavaclient2.validators import Length, Range
+from lavaclient2.util import display_result, prettify, _prettify
 
 
 def DateTime(value):
@@ -58,7 +60,11 @@ class Node(Config, IdReprMixin):
     node_group = Field(six.text_type, required=True)
 
 
+@prettify('components')
 class NodeGroup(Config, IdReprMixin):
+
+    table_columns = ('id', 'flavor_id', 'count', '_components')
+    table_header = ('ID', 'Flavor', 'Count', 'Components')
 
     id = Field(six.text_type, required=True,
                validator=Length(min=1, max=255))
@@ -68,6 +74,9 @@ class NodeGroup(Config, IdReprMixin):
 
 
 class Cluster(Config, IdReprMixin):
+
+    table_columns = ('id', 'name', 'status', 'stack_id', 'created')
+    table_header = ('ID', 'Name', 'Status', 'Stack', 'Created')
 
     id = Field(six.text_type, required=True)
     created = Field(DateTime, required=True)
@@ -90,13 +99,32 @@ class ClusterDetail(Config, IdReprMixin):
 
     __inherits__ = [Cluster]
 
+    table_columns = ('id', 'name', 'status', 'stack_id', 'created',
+                     'cbd_version', 'username', 'progress')
+    table_header = ('ID', 'Name', 'Status', 'Stack', 'Created', 'CBD Version',
+                    'Username', 'Progress')
+
     node_groups = ListField(NodeGroup, required=True)
     username = Field(six.text_type, required=True)
     scripts = ListField(ClusterScript, required=True)
     progress = Field(float, required=True)
 
+    def display(self):
+        display_result(self, ClusterDetail, title='Cluster')
+
+        if self.node_groups:
+            six.print_()
+            display_result(self.node_groups, NodeGroup, title='Node Groups')
+
+        if self.scripts:
+            six.print_()
+            display_result(self.scripts, ClusterScript, title='Scripts')
+
 
 class Flavor(Config, IdReprMixin):
+
+    table_columns = ('id', 'name', 'ram', 'vcpus', 'disk')
+    table_header = ('ID', 'Name', 'RAM', 'VCPUs', 'Disk')
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
@@ -117,12 +145,20 @@ class DistroServiceMode(Config):
     name = Field(six.text_type, required=True)
 
 
+@prettify('components')
 class DistroService(Config):
+
+    table_columns = ('name', 'version', '_components', '_description')
+    table_header = ('Name', 'Version', 'Components', 'Description')
 
     name = Field(six.text_type, required=True)
     version = Field(six.text_type, required=True)
     description = Field(six.text_type, required=True)
     components = ListField(dict, required=True)
+
+    @property
+    def _description(self):
+        return '\n'.join(textwrap.wrap(self.description, 30))
 
 
 class ResourceLimits(Config):
@@ -132,7 +168,14 @@ class ResourceLimits(Config):
     min_ram = Field(int, required=True)
 
 
+@prettify('components', 'resource_limits')
 class StackNodeGroup(Config, IdReprMixin):
+
+    table_columns = ('id', 'flavor_id', 'count', 'resource_limits.min_ram',
+                     'resource_limits.min_count',
+                     'resource_limits.max_count')
+    table_header = ('ID', 'Flavor', 'Count', 'Min RAM', 'Min count',
+                    'Max Count')
 
     id = Field(six.text_type, required=True)
     flavor_id = Field(six.text_type, required=True)
@@ -147,7 +190,11 @@ class StackService(Config):
     modes = ListField(six.text_type, required=True)
 
 
+@prettify('services')
 class Stack(Config, IdReprMixin):
+
+    table_columns = ('id', 'name', 'distro', '_services')
+    table_header = ('ID', 'Name', 'Distro', 'Services')
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
@@ -156,12 +203,29 @@ class Stack(Config, IdReprMixin):
     services = ListField(StackService, required=True)
 
 
+@prettify('node_groups')
 class StackDetail(Stack):
 
     __inherits__ = [Stack]
 
+    table_columns = ('id', 'name', 'distro', 'created', '_services',
+                     '_node_group_ids')
+    table_header = ('ID', 'Name', 'Distro', 'Created', 'Services',
+                    'Node Groups')
+
     created = Field(DateTime, required=True)
     node_groups = ListField(StackNodeGroup, required=True)
+
+    def display(self):
+        display_result(self, StackDetail, title='Stack')
+
+        if self.node_groups:
+            display_result(self.node_groups, StackNodeGroup,
+                           title='Node Groups')
+
+    @property
+    def _node_group_ids(self):
+        return _prettify([group.id for group in self.node_groups])
 
 
 class Distro(Config, IdReprMixin):
@@ -171,20 +235,32 @@ class Distro(Config, IdReprMixin):
     version = Field(six.text_type, required=True)
 
 
+@prettify('services')
 class DistroDetail(Config, IdReprMixin):
+
+    table_columns = ('id', 'name', 'version')
+    table_header = ('ID', 'Name', 'Version')
 
     __inherits__ = [Distro]
 
     services = ListField(DistroService, required=True)
 
+    def display(self):
+        display_result(self, DistroDetail, title='Distro')
+        six.print_()
+        display_result(self.services, DistroService, 'Services')
+
 
 class Script(Config, IdReprMixin):
+
+    table_columns = ('id', 'name', 'type', 'is_public', 'created', 'url')
+    table_header = ('ID', 'Name', 'Type', 'Public', 'Created', 'URL')
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
     type = Field(six.text_type, required=True)
     url = Field(six.text_type, required=True)
     is_public = Field(bool, required=True)
-    updated = Field(DateTime, required=True)
     created = Field(DateTime, required=True)
+    updated = Field(DateTime, required=True)
     links = ListField(Link, required=True)

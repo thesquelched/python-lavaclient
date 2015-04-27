@@ -5,9 +5,9 @@ from lavaclient2.api import response
 from lavaclient2 import error
 
 
-def test_list(lavaclient, distro_fixture):
+def test_list(lavaclient, distros_response):
     with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'distros': [distro_fixture]}
+        request.return_value = distros_response
         resp = lavaclient.distros.list()
 
         assert isinstance(resp, list)
@@ -19,9 +19,9 @@ def test_list(lavaclient, distro_fixture):
         pytest.raises(error.ApiError, lavaclient.distros.list)
 
 
-def test_get(lavaclient, distro_fixture):
+def test_get(lavaclient, distro_response):
     with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'distro': distro_fixture}
+        request.return_value = distro_response
         resp = lavaclient.distros.get('HDP2.2')
 
         assert isinstance(resp, response.DistroDetail)

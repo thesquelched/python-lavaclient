@@ -1,13 +1,18 @@
+import argparse
+import re
 import six
 import logging
 from figgis import Config, ListField, Field
 
 from lavaclient2.api import resource
 from lavaclient2.api.response import Cluster, ClusterDetail
-from lavaclient2 import constants, validators
+from lavaclient2 import validators
+from lavaclient2.util import CommandLine, argument, command, display_table
+from lavaclient2.log import NullHandler
 
 
-LOG = logging.getLogger(constants.LOGGER_NAME)
+LOG = logging.getLogger(__name__)
+LOG.addHandler(NullHandler())
 
 
 ######################################################################
@@ -58,10 +63,41 @@ class ClusterCreateRequest(Config):
 # API Resource
 ######################################################################
 
+def parse_node_group(value):
+    var_rgx = r'(?:[a-zA-Z-]\w*)'
+    expr_rgx = r'(?:{var}\s*=\s*.*?)'.format(var=var_rgx)
+    node_group_rgx = r'({var})(?:\(({expr}?(?:\s*,\s*{expr})*)\))?$'.format(
+        var=var_rgx, expr=expr_rgx)
+
+    match = re.match(node_group_rgx, value)
+    if match is None:
+        raise argparse.ArgumentTypeError(
+            'Invalid node group: {0}'.format(value))
+
+    node_group, argstr = match.groups()
+
+    if argstr:
+        exprs = [item.split('=', 1) for item in argstr.split(',')]
+        keywords = dict((key.strip(), value.strip()) for key, value in exprs)
+    else:
+        keywords = {}
+
+    data = {'id': node_group}
+    data.update(keywords)
+
+    # Make sure that node group is valid
+    ClusterCreateNodeGroups(data)
+
+    return data
+
+
+@six.add_metaclass(CommandLine)
 class Resource(resource.Resource):
 
     """Clusters API methods"""
 
+    @command
+    @display_table(Cluster)
     def list(self):
         """
         List clusters that belong to the tenant specified in the client
@@ -73,6 +109,8 @@ class Resource(resource.Resource):
             ClustersResponse,
             wrapper='clusters')
 
+    @command
+    @display_table(ClusterDetail)
     def get(self, cluster_id):
         """
         Get the cluster corresponding to the cluster ID
@@ -85,6 +123,15 @@ class Resource(resource.Resource):
             ClusterResponse,
             wrapper='cluster')
 
+    @command(node_groups=argument(
+        '--node-group', type=parse_node_group, action='append',
+        help='Node group options; may be used multiple times to configure '
+             'multiple node groups. Each option should be in the form '
+             '<id>(<key>=<value>, ...), where <id> is a valid node group ID '
+             'for the stack and the key-value pairs are options to specify '
+             'for that node group. Current valid options are `count` and '
+             '`flavor_id`'))
+    @display_table(Cluster)
     def create(self, name, username, keypair_name, stack_id,
                node_groups=None):
         """
@@ -114,6 +161,7 @@ class Resource(resource.Resource):
             ClusterResponse,
             wrapper='cluster')
 
+    @command
     def delete(self, cluster_id):
         """
         Delete a cluster

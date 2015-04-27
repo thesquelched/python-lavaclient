@@ -1,12 +1,15 @@
+import six
 import logging
 from figgis import Config, ListField, Field
 
 from lavaclient2.api import resource
 from lavaclient2.api.response import Distro, DistroDetail
-from lavaclient2 import constants
+from lavaclient2.util import CommandLine, command, display_table
+from lavaclient2.log import NullHandler
 
 
-LOG = logging.getLogger(constants.LOGGER_NAME)
+LOG = logging.getLogger(__name__)
+LOG.addHandler(NullHandler())
 
 
 ######################################################################
@@ -27,10 +30,13 @@ class DistrosResponse(Config):
 # API Resource
 ######################################################################
 
+@six.add_metaclass(CommandLine)
 class Resource(resource.Resource):
 
     """Distros API methods"""
 
+    @command
+    @display_table(Distro)
     def list(self):
         """
         List all distros
@@ -42,6 +48,8 @@ class Resource(resource.Resource):
             DistrosResponse,
             wrapper='distros')
 
+    @command
+    @display_table(DistroDetail)
     def get(self, distro_id):
         """
         Get a specific distro

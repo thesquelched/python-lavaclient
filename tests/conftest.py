@@ -32,7 +32,7 @@ def link_response():
 
 
 @pytest.fixture
-def flavor_response(link_response):
+def flavor(link_response):
     return {
         'id': 'hadoop1-15',
         'name': 'Medium Hadoop Instance',
@@ -41,6 +41,11 @@ def flavor_response(link_response):
         'disk': 2500,
         'links': [link_response],
     }
+
+
+@pytest.fixture
+def flavors_response(flavor):
+    return {'flavors': [flavor]}
 
 
 @pytest.fixture
@@ -54,122 +59,233 @@ def node_group():
 
 
 @pytest.fixture
-def distro_fixture():
+def distro(link_response):
     return {
-        "id": "HDP2.2",
-        "name": "HortonWorks Data Platform",
-        "version": "2.2",
-        "services": [
-            {
-                "components": [
-                    {
-                        "name": "Namenode"
-                    },
-                    {
-                        "mode": "Secondary",
-                        "name": "SecondaryNamenode"
-                    },
-                    {
-                        "name": "Datanode"
-                    },
-                ],
-                "modes": [
-                    {
-                        "name": "Secondary"
-                    }
-                ],
-                "name": "HDFS",
-                "version": "2.6",
-                "description": (
-                    "Hadoop Distributed File System (HDFS) is a scalable, "
-                    "fault-tolerant, distributed file system that provides "
-                    "scalable and reliable data storage designed to span "
-                    "large clusters of commodity servers."
-                )
-            },
-            {
-                "components": [
-                    {
-                        "name": "ResourceManager"
-                    },
-                    {
-                        "name": "NodeManager"
-                    },
-                    {
-                        "name": "TimelineHistoryServer"
-                    }
-                ],
-                "name": "Yarn",
-                "version": "2.6",
-                "description": (
-                    "YARN (Yet Another Resource Negotiator) is a core "
-                    "component of Hadoop, managing access to all resources "
-                    "in a cluster. YARN brokers access to cluster compute "
-                    "resources on behalf of multiple applications, using "
-                    "selectable criteria such as fairness or capacity, "
-                    "allowing for a more general-purpose resource management."
-                )
-            },
-            {
-                "components": [
-                    {
-                        "name": "MRHistoryServer"
-                    },
-                    {
-                        "name": "MRClient"
-                    }
-                ],
-                "name": "MapReduce",
-                "version": "2.6",
-                "description": (
-                    "Hadoop MapReduce is a software framework for easily "
-                    "writing applications which process vast amounts of data "
-                    "(multi-terabyte data-sets) in-parallel on large clusters "
-                    "of commodity hardware in a reliable, fault-tolerant "
-                    "manner."
-                )
-            },
-            {
-                "components": [
-                    {
-                        "name": "HiveServer2"
-                    },
-                    {
-                        "name": "HiveMetastore"
-                    },
-                    {
-                        "name": "HiveAPI"
-                    },
-                    {
-                        "name": "HiveClient"
-                    }
-                ],
-                "name": "Hive",
-                "version": "0.14.0",
-                "description": (
-                    "Apache Hive is a data warehouse infrastructure built on "
-                    "top of Hadoop for providing data summarization, query, "
-                    "and analysis. Hive provides a mechanism to project "
-                    "structure onto this data and query the data using a "
-                    "SQL-like language called HiveQL."
-                )
-            },
-            {
-                "components": [
-                    {
-                        "name": "PigClient"
-                    }
-                ],
-                "name": "Pig",
-                "version": "0.14.0",
-                "description": (
-                    "Apache Pig is a platform for analyzing large data sets "
-                    "that consists of a high-level language (Pig Latin) for "
-                    "expressing data analysis programs, coupled with "
-                    "infrastructure for evaluating these programs. Pig Latin "
-                    "abstracts the programming from the Java MapReduce idiom "
-                    "into a notation similar to that of SQL for RDBMS systems."
-                )
-            }
-        ]
+        'id': 'HDP2.2',
+        'links': [link_response],
+        'name': 'HortonWorks Data Platform',
+        'version': '2.2'
     }
+
+
+@pytest.fixture
+def distro_service():
+    return {
+        'components': [{'name': 'component'}],
+        'description': 'description',
+        'name': 'name',
+        'version': 'version'
+    }
+
+
+@pytest.fixture
+def distro_detail(distro, distro_service):
+    data = distro.copy()
+    data.update(services=[distro_service])
+    return data
+
+
+@pytest.fixture
+def distros_response(distro):
+    return {'distros': [distro]}
+
+
+@pytest.fixture
+def distro_response(distro_detail):
+    return {'distro': distro_detail}
+
+
+@pytest.fixture
+def cluster_script():
+    return {
+        'id': 'script_id',
+        'name': 'name',
+        'status': 'status',
+    }
+
+
+@pytest.fixture
+def cluster(link_response):
+    return {
+        'id': 'cluster_id',
+        'created': '2014-01-01',
+        'updated': None,
+        'name': 'cluster_name',
+        'status': 'PENDING',
+        'stack_id': 'stack_id',
+        'cbd_version': 1,
+        'links': [link_response],
+    }
+
+
+@pytest.fixture
+def cluster_detail(cluster, node_group, cluster_script):
+    data = cluster.copy()
+    data.update(
+        node_groups=[node_group],
+        username='username',
+        scripts=[cluster_script],
+        progress=1.0
+    )
+    return data
+
+
+@pytest.fixture
+def cluster_response(cluster_detail):
+    return {'cluster': cluster_detail}
+
+
+@pytest.fixture
+def clusters_response(cluster):
+    return {'clusters': [cluster]}
+
+
+@pytest.fixture
+def script(link_response):
+    return {
+        'id': 'id',
+        'name': 'name',
+        'type': 'POST_INIT',
+        'url': 'url',
+        'is_public': True,
+        'created': '2015-01-01',
+        'updated': '2015-01-01',
+        'links': [link_response],
+    }
+
+
+@pytest.fixture
+def scripts_response(script):
+    return {'scripts': [script]}
+
+
+@pytest.fixture
+def script_response(script):
+    return {'script': script}
+
+
+@pytest.fixture
+def absolute_limit():
+    return {
+        'limit': 10,
+        'remaining': 0,
+    }
+
+
+@pytest.fixture
+def absolute_limits(absolute_limit):
+    return {
+        'node_count': absolute_limit,
+        'ram': absolute_limit,
+        'disk': absolute_limit,
+        'vcpus': absolute_limit,
+    }
+
+
+@pytest.fixture
+def limit(absolute_limits, link_response):
+    return {
+        'absolute': absolute_limits,
+        'links': [link_response]
+    }
+
+
+@pytest.fixture
+def limits_response(limit):
+    return {'limits': limit}
+
+
+@pytest.fixture
+def stack_service():
+    return {
+        'name': 'service_name',
+        'modes': ['mode1'],
+        'version': 'version',
+        'components': [{'name': 'component'}],
+    }
+
+
+@pytest.fixture
+def stack(stack_service, link_response):
+    return {
+        'id': 'stack_id',
+        'name': 'stack_name',
+        'distro': 'distro',
+        'services': [stack_service],
+        'links': [link_response],
+    }
+
+
+@pytest.fixture
+def stacks_response(stack):
+    return {'stacks': [stack]}
+
+
+@pytest.fixture
+def stack_node_group():
+    return {
+        'id': 'id',
+        'flavor_id': 'hadoop1-7',
+        'count': 10,
+        'components': [{'name': 'component'}],
+        'resource_limits': {
+            'min_count': 1,
+            'max_count': 10,
+            'min_ram': 1024,
+        }
+    }
+
+
+@pytest.fixture
+def stack_detail(stack, stack_node_group):
+    data = stack.copy()
+    data.update(
+        created='2015-01-01',
+        node_groups=[stack_node_group],
+    )
+    return data
+
+
+@pytest.fixture
+def stack_response(stack_detail):
+    return {'stack': stack_detail}
+
+
+@pytest.fixture
+def workload():
+    return {
+        'id': 'id',
+        'name': 'name',
+        'caption': 'caption',
+        'description': 'description',
+    }
+
+
+@pytest.fixture
+def workloads_response(workload):
+    return {'workloads': [workload]}
+
+
+@pytest.fixture
+def recommendation_size():
+    return {
+        'flavor': 'hadoop1-7',
+        'minutes': 1.0,
+        'nodecount': 2,
+        'recommended': True,
+    }
+
+
+@pytest.fixture
+def recommendation(recommendation_size):
+    return {
+        'name': 'name',
+        'description': 'description',
+        'requires': ['requires'],
+        'sizes': [recommendation_size],
+    }
+
+
+@pytest.fixture
+def recommendations_response(recommendation):
+    return {'recommendations': [recommendation]}

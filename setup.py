@@ -59,4 +59,7 @@ if __name__ == '__main__':
             "Operating System :: OS Independent",
             "Programming Language :: Python"
         ],
+        entry_points={
+            'console_scripts': ['lava2 = lavaclient2.cli:main'],
+        },
     )

@@ -1,14 +1,17 @@
 import logging
 import six
+import json
 from figgis import Config, ListField, Field
 
 from lavaclient2.api import resource
 from lavaclient2.api.response import Stack, StackDetail
-from lavaclient2 import constants
 from lavaclient2.validators import Length, List, Range
+from lavaclient2.util import CommandLine, command, argument, display_table
+from lavaclient2.log import NullHandler
 
 
-LOG = logging.getLogger(constants.LOGGER_NAME)
+LOG = logging.getLogger(__name__)
+LOG.addHandler(NullHandler())
 
 
 ######################################################################
@@ -36,11 +39,19 @@ class Service(Config):
     modes = ListField(six.text_type,
                       validator=List(Length(min=1, max=255)))
 
+    @classmethod
+    def _describe(cls):
+        return cls.describe().replace('\n', ', ')
+
 
 class Component(Config):
 
     name = Field(six.text_type, required=True,
                  validator=Length(min=1, max=255))
+
+    @classmethod
+    def _describe(cls):
+        return cls.describe().replace('\n', ', ')
 
 
 class NodeGroup(Config):
@@ -49,6 +60,10 @@ class NodeGroup(Config):
     flavor_id = Field(six.text_type)
     count = Field(int, validator=Range(min=0, max=100))
     components = ListField(Component)
+
+    @classmethod
+    def _describe(cls):
+        return cls.describe().replace('\n', ', ')
 
 
 class CreateStackRequest(Config):
@@ -65,10 +80,13 @@ class CreateStackRequest(Config):
 # API Resource
 ######################################################################
 
+@six.add_metaclass(CommandLine)
 class Resource(resource.Resource):
 
     """Flavors API methods"""
 
+    @command
+    @display_table(Stack)
     def list(self):
         """
         List all stacks
@@ -80,6 +98,8 @@ class Resource(resource.Resource):
             StacksResponse,
             wrapper='stacks')
 
+    @command
+    @display_table(StackDetail)
     def get(self, stack_id):
         """
         Get a specific stack
@@ -91,6 +111,20 @@ class Resource(resource.Resource):
             StackResponse,
             wrapper='stack')
 
+    @command(
+        node_groups=argument(
+            '--node-groups', type=json.loads,
+            help='Json string containing an array with the following '
+                 'elements: {0}; Component is an array with the following '
+                 'elements: {1}'.format(
+                     NodeGroup._describe(),
+                     Component._describe())),
+        services=argument(
+            'services', type=json.loads,
+            help='Json string containing an array with the following '
+                 'elements: {0}'.format(Service._describe()))
+    )
+    @display_table(StackDetail)
     def create(self, name, distro, services, node_groups=None):
         """
         Create a stack
@@ -114,10 +148,11 @@ class Resource(resource.Resource):
             data, CreateStackRequest, wrapper='stack')
 
         return self._parse_response(
-            self._client._post('stacks', data=request_data),
+            self._client._post('stacks', json=request_data),
             StackResponse,
             wrapper='stack')
 
+    @command
     def delete(self, stack_id):
         """
         Delete a stack

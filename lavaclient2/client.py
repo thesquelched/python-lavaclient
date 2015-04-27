@@ -22,11 +22,13 @@ from lavaclient2 import keystone
 from lavaclient2 import util
 from lavaclient2 import constants
 from lavaclient2 import error
+from lavaclient2.log import NullHandler
 from lavaclient2.api import (clusters, limits, flavors, stacks, distros,
                              workloads, scripts)
 
 
-LOG = logging.getLogger(constants.LOGGER_NAME)
+LOG = logging.getLogger(__name__)
+LOG.addHandler(NullHandler())
 
 
 class Lava(object):
@@ -234,7 +236,6 @@ class Lava(object):
         try:
             resp = requests.request(method, url, **kwargs)
             resp.raise_for_status()
-            return resp.json()
         except requests.exceptions.HTTPError as exc:
             if exc.response.status_code != requests.codes.unauthorized:
                 try:
@@ -258,3 +259,8 @@ class Lava(object):
                 method.upper(), path.lstrip('/'))
             LOG.critical(msg, exc_info=exc)
             six.raise_from(error.RequestError(msg), exc)
+
+        try:
+            return resp.json()
+        except ValueError:
+            return resp

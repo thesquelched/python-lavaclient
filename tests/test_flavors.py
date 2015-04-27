@@ -5,9 +5,9 @@ from lavaclient2.api import response
 from lavaclient2 import error
 
 
-def test_list(lavaclient, flavor_response):
+def test_list(lavaclient, flavors_response):
     with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'flavors': [flavor_response]}
+        request.return_value = flavors_response
         resp = lavaclient.flavors.list()
 
         assert isinstance(resp, list)

@@ -20,15 +20,6 @@ def cluster_fixture(link_response):
 
 
 @pytest.fixture
-def cluster_script():
-    return {
-        'id': 'script_id',
-        'name': 'name',
-        'status': 'status',
-    }
-
-
-@pytest.fixture
 def cluster_detail_fixture(cluster_fixture, node_group, cluster_script):
     data = cluster_fixture.copy()
     data.update(
