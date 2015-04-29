@@ -11,7 +11,7 @@ from lavaclient2.error import LavaError
 from lavaclient2.util import get_function_arguments, first_exists
 from lavaclient2.log import NullHandler
 from lavaclient2.api import (clusters, limits, flavors, stacks, distros,
-                             workloads, scripts)
+                             workloads, scripts, nodes)
 
 
 LOG = logging.getLogger(__name__)
@@ -165,7 +165,7 @@ def parse_argv():
                              command='authenticate'))
 
     for module in (clusters, limits, flavors, stacks, distros, workloads,
-                   scripts):
+                   scripts, nodes):
         name = module.__name__.split('.')[-1]
         subparser = subparsers.add_parser(name, parents=[parser_base])
         subparser.set_defaults(resource=name)

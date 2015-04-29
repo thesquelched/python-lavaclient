@@ -289,3 +289,42 @@ def recommendation(recommendation_size):
 @pytest.fixture
 def recommendations_response(recommendation):
     return {'recommendations': [recommendation]}
+
+
+@pytest.fixture
+def node(link_response):
+    return {
+        'id': 'node_id',
+        'name': 'NODENAME',
+        'status': 'status',
+        'created': '2014-01-01',
+        'updated': None,
+        'flavor_id': 'flavor_id',
+        'node_group': [],
+        'addresses': {
+            'public': [
+                {
+                    'addr': '1.2.3.4',
+                    'version': '4.0'
+                }
+            ],
+            'private': [
+                {
+                    'addr': '5.6.7.8',
+                    'version': '4.0'
+                }
+            ]
+        },
+        'components': [
+            {
+                "name": 'component_name',
+                "uri": 'url'
+            }
+        ],
+        "links": [link_response]
+    }
+
+
+@pytest.fixture
+def nodes_response(node):
+    return {'nodes': [node]}

@@ -24,7 +24,7 @@ from lavaclient2 import constants
 from lavaclient2 import error
 from lavaclient2.log import NullHandler
 from lavaclient2.api import (clusters, limits, flavors, stacks, distros,
-                             workloads, scripts)
+                             workloads, scripts, nodes)
 
 
 LOG = logging.getLogger(__name__)
@@ -112,6 +112,7 @@ class Lava(object):
         self.distros = distros.Resource(self, command_line=_enable_cli)
         self.workloads = workloads.Resource(self, command_line=_enable_cli)
         self.scripts = scripts.Resource(self, command_line=_enable_cli)
+        self.nodes = nodes.Resource(self, command_line=_enable_cli)
 
     def _validate_endpoint(self, endpoint, tenant_id):
         """Validate that the endpoint ends with v2/<tenant_id>"""

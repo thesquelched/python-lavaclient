@@ -31,11 +31,6 @@ def cluster_detail_fixture(cluster_fixture, node_group, cluster_script):
     return data
 
 
-@pytest.fixture
-def nodes_fixture():
-    return {}
-
-
 def test_api_list(lavaclient, cluster_fixture):
     with patch.object(lavaclient, '_request') as request:
         request.return_value = {'clusters': []}
@@ -97,3 +92,12 @@ def test_api_delete(lavaclient, cluster_fixture):
         request.return_value = {'cluster': cluster_fixture}
         resp = lavaclient.clusters.delete('cluster_id')
         assert resp is None
+
+
+def test_api_cluster_nodes(lavaclient, nodes_response):
+    with patch.object(lavaclient, '_request') as request:
+        request.return_value = nodes_response
+        resp = lavaclient.clusters.nodes('cluster_id')
+        assert isinstance(resp, list)
+        assert len(resp) == 1
+        assert all(isinstance(item, response.Node) for item in resp)

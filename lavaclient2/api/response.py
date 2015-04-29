@@ -45,19 +45,48 @@ class Link(Config):
             self.rel, self.href)
 
 
+class Address(Config):
+
+    address = Field(six.text_type, required=True, key='addr')
+    version = Field(six.text_type, required=True)
+
+
+class Addresses(Config):
+
+    public = ListField(Address, required=True)
+    private = ListField(Address, required=True)
+
+
+@prettify('components')
 class Node(Config, IdReprMixin):
+    table_columns = ('id', 'name', 'node_group', 'status',
+                     'public_ip', 'private_ip', '_components')
+    table_header = ('ID', 'Name', 'Role', 'Status', 'Public IP',
+                    'Private IP', 'Components')
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
     created = Field(DateTime, required=True)
     updated = Field(DateTime, required=True)
-    role = Field(six.text_type, required=True)
     status = Field(six.text_type, required=True)
-    ip = Field(six.text_type, required=True)
-    fqdn = Field(six.text_type, required=True)
     flavor_id = Field(six.text_type, required=True)
-    private_ip = Field(six.text_type, required=True)
+    addresses = Field(Addresses, required=True)
     node_group = Field(six.text_type, required=True)
+    components = ListField(dict, required=True)
+
+    @property
+    def private_ip(self):
+        try:
+            return self.addresses.private[0].address
+        except IndexError:
+            return None
+
+    @property
+    def public_ip(self):
+        try:
+            return self.addresses.public[0].address
+        except IndexError:
+            return None
 
 
 @prettify('components')

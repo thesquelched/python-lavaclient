@@ -4,7 +4,7 @@ from datetime import datetime
 from copy import deepcopy
 
 from lavaclient2.cli import main
-from lavaclient2.api.response import Cluster, ClusterDetail, NodeGroup
+from lavaclient2.api.response import Cluster, ClusterDetail, NodeGroup, Node
 
 
 @patch('sys.argv', ['lava2', 'clusters', 'list'])
@@ -119,3 +119,16 @@ def test_wait(print_table, print_single_table, mock_client, cluster_response):
     assert list(data) == [['script_id', 'name', 'status']]
     assert header == ['ID', 'Name', 'Status']
     assert kwargs['title'] == 'Scripts'
+
+
+@patch('sys.argv', ['lava2', 'clusters', 'nodes', 'cluster_id'])
+def test_nodes(print_table, mock_client, nodes_response):
+    mock_client._request.return_value = nodes_response
+    main()
+
+    (data, header), kwargs = print_table.call_args
+    alldata = [entry for entry in list(data)[0]]
+    assert alldata[:6] == ['node_id', 'NODENAME', '[]', 'status', '1.2.3.4',
+                           '5.6.7.8']
+    assert header == Node.table_header
+    assert kwargs['title'] is None

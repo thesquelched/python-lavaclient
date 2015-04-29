@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from figgis import Config, ListField, Field
 
 from lavaclient2.api import resource
-from lavaclient2.api.response import Cluster, ClusterDetail
+from lavaclient2.api.response import Cluster, ClusterDetail, Node
 from lavaclient2 import validators, error
 from lavaclient2.util import CommandLine, argument, command, display_table
 from lavaclient2.log import NullHandler
@@ -262,3 +262,13 @@ class Resource(resource.Resource):
 
         raise error.TimeoutError(
             'Cluster did not become active before timeout')
+
+    @command
+    @display_table(Node)
+    def nodes(self, cluster_id):
+        """
+        Get the cluster nodes
+        :param cluster_id:
+        :return: nodes of the cluster
+        """
+        return self._client.nodes.list(cluster_id)
