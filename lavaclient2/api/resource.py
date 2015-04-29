@@ -32,8 +32,9 @@ def _prune_marshaled_data(marshaled, original_data):
 
 class Resource(object):
 
-    def __init__(self, client):
+    def __init__(self, client, command_line=False):
         self._client = client
+        self._command_line = command_line
 
     def _parse_response(self, data, response_class, wrapper=None):
         """

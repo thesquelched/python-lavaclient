@@ -54,7 +54,8 @@ def create_client(args):
                                   os.environ.get('OS_AUTH_URL')),
             endpoint=first_exists(args.endpoint,
                                   os.environ.get('LAVA2_API_URL')),
-            verify_ssl=args.verify_ssl)
+            verify_ssl=args.verify_ssl,
+            _enable_cli=True)
     except LavaError as exc:
         six.print_('Error during authentication: {0}'.format(exc),
                    file=sys.stderr)
@@ -100,15 +101,7 @@ def execute_command(args):
         sys.exit(0)
 
     action = getattr(getattr(client, resource), command)
-
-    try:
-        call_action(action, args)
-    except Exception as exc:
-        LOG.debug('Error while calling action', exc_info=exc)
-        six.print_('ERROR: {0}'.format(exc), file=sys.stderr)
-        sys.exit(1)
-    except KeyboardInterrupt:
-        pass
+    call_action(action, args)
 
 
 def initialize_logging(args):  # pragma: nocover
@@ -131,6 +124,7 @@ def initialize_logging(args):  # pragma: nocover
         pass
 
     logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+    logging.getLogger('iso8601').setLevel(logging.CRITICAL)
 
 
 def parse_argv():
@@ -187,7 +181,15 @@ def main():
         sys.exit(0)
 
     initialize_logging(args)
-    execute_command(args)
+
+    try:
+        execute_command(args)
+    except Exception as exc:
+        LOG.debug('Error while executing command', exc_info=exc)
+        six.print_('ERROR: {0}'.format(exc), file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':  # pragma: nocover

@@ -11,7 +11,7 @@ def cluster_response(node_group, link_response):
         'name': 'cluster_name',
         'created': '2014-01-01',
         'updated': None,
-        'status': 'PENDING',
+        'status': 'ACTIVE',
         'stack_id': 'stack_id',
         'links': [link_response],
         'cbd_version': 1,
@@ -25,7 +25,7 @@ def test_cluster(cluster_response):
     assert cluster.name == 'cluster_name'
     assert cluster.created == datetime(2014, 1, 1)
     assert cluster.updated is None
-    assert cluster.status == 'PENDING'
+    assert cluster.status == 'ACTIVE'
     assert cluster.stack_id == 'stack_id'
 
 

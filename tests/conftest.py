@@ -111,7 +111,7 @@ def cluster(link_response):
         'created': '2014-01-01',
         'updated': None,
         'name': 'cluster_name',
-        'status': 'PENDING',
+        'status': 'ACTIVE',
         'stack_id': 'stack_id',
         'cbd_version': 1,
         'links': [link_response],

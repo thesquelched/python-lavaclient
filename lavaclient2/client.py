@@ -44,7 +44,8 @@ class Lava(object):
                  auth_url=None,
                  tenant_id=None,
                  endpoint=None,
-                 verify_ssl=None):
+                 verify_ssl=None,
+                 _enable_cli=False):
         """
         Create a Lava API client using your API key and username.
         Authentication is handled via Keystone.
@@ -104,13 +105,13 @@ class Lava(object):
             self._endpoint = self._validate_endpoint(endpoint, tenant_id)
 
         # Initialize API resources
-        self.clusters = clusters.Resource(self)
-        self.limits = limits.Resource(self)
-        self.flavors = flavors.Resource(self)
-        self.stacks = stacks.Resource(self)
-        self.distros = distros.Resource(self)
-        self.workloads = workloads.Resource(self)
-        self.scripts = scripts.Resource(self)
+        self.clusters = clusters.Resource(self, command_line=_enable_cli)
+        self.limits = limits.Resource(self, command_line=_enable_cli)
+        self.flavors = flavors.Resource(self, command_line=_enable_cli)
+        self.stacks = stacks.Resource(self, command_line=_enable_cli)
+        self.distros = distros.Resource(self, command_line=_enable_cli)
+        self.workloads = workloads.Resource(self, command_line=_enable_cli)
+        self.scripts = scripts.Resource(self, command_line=_enable_cli)
 
     def _validate_endpoint(self, endpoint, tenant_id):
         """Validate that the endpoint ends with v2/<tenant_id>"""

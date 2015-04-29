@@ -2,17 +2,32 @@ import argparse
 import re
 import six
 import logging
+import time
+import sys
+from datetime import datetime, timedelta
 from figgis import Config, ListField, Field
 
 from lavaclient2.api import resource
 from lavaclient2.api.response import Cluster, ClusterDetail
-from lavaclient2 import validators
+from lavaclient2 import validators, error
 from lavaclient2.util import CommandLine, argument, command, display_table
 from lavaclient2.log import NullHandler
 
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(NullHandler())
+
+
+WAIT_INTERVAL = 30
+MIN_INTERVAL = 10
+
+
+def natural_number(value):
+    intval = int(value)
+    if intval < 0:
+        raise argparse.ArgumentTypeError('Must be a non-negative integer')
+
+    return intval
 
 
 ######################################################################
@@ -91,6 +106,36 @@ def parse_node_group(value):
     return data
 
 
+def elapsed_minutes(start):
+    return (datetime.now() - start).total_seconds() / 60
+
+
+def wait_coroutine(command_line, start):
+    """Coroutine that runs during the wait command. Prints status to stdout if
+    the command line is running; otherwise, just log the status."""
+
+    started = False
+
+    while True:
+        cluster = yield
+        LOG.debug('Cluster {0}: {1}'.format(cluster.id, cluster.status))
+
+        if command_line:
+            if not started:
+                started = True
+                cli_msg_length = 0
+                six.print_('Waiting for cluster {0}'.format(cluster.id))
+
+            msg = 'Status: {0} (Elapsed time: {1:.1f} minutes)'.format(
+                cluster.status, elapsed_minutes(start))
+            sys.stdout.write('\b' * cli_msg_length + msg)
+            sys.stdout.flush()
+            cli_msg_length = len(msg)
+
+            if cluster.status == 'ACTIVE':
+                six.print_('\n')
+
+
 @six.add_metaclass(CommandLine)
 class Resource(resource.Resource):
 
@@ -131,7 +176,7 @@ class Resource(resource.Resource):
              'for the stack and the key-value pairs are options to specify '
              'for that node group. Current valid options are `count` and '
              '`flavor_id`'))
-    @display_table(Cluster)
+    @display_table(ClusterDetail)
     def create(self, name, username, keypair_name, stack_id,
                node_groups=None):
         """
@@ -170,3 +215,50 @@ class Resource(resource.Resource):
         :returns: Same as :func:`get`
         """
         self._client._delete('clusters/' + six.text_type(cluster_id))
+
+    @command(
+        timeout=argument('--timeout', type=natural_number),
+        interval=argument('--interval', type=natural_number)
+    )
+    @display_table(ClusterDetail)
+    def wait(self, cluster_id, timeout=None, interval=None):
+        """
+        Wait (blocking) for a cluster to either become active or fail.
+
+        :param cluster_id: Cluster ID
+        :param timeout: Wait timeout in minutes (default: no timeout)
+        :returns: Same as :func:`get`
+        """
+        if interval is None:
+            interval = WAIT_INTERVAL
+
+        interval = max(MIN_INTERVAL, interval)
+
+        delta = timedelta(minutes=timeout) if timeout else timedelta(days=365)
+        in_progress_states = frozenset([
+            'BUILDING', 'BUILD', 'CONFIGURING', 'CONFIGURED', 'UPDATING',
+            'REBOOTING', 'RESIZING', 'WAITING'])
+
+        start = datetime.now()
+        timeout_date = start + delta
+
+        printer_coro = wait_coroutine(self._command_line, start)
+        printer_coro.send(None)  # Like running next, but py2/3 compatible
+
+        while datetime.now() < timeout_date:
+            cluster = self.get(cluster_id)
+            printer_coro.send(cluster)
+
+            if cluster.status == 'ACTIVE':
+                return cluster
+            elif cluster.status not in in_progress_states:
+                raise error.FailedError(
+                    'Cluster status is {0}'.format(cluster.status))
+
+            if datetime.now() + timedelta(seconds=interval) >= timeout_date:
+                break
+
+            time.sleep(interval)
+
+        raise error.TimeoutError(
+            'Cluster did not become active before timeout')

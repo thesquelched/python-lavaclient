@@ -36,3 +36,14 @@ class RequestError(LavaError):
 
 class ApiError(LavaError):
     pass
+
+
+class FailedError(LavaError):
+    """The API request completed successfully, but the desired action on the
+    server failed"""
+    pass
+
+
+class TimeoutError(LavaError):
+    """The action timed out"""
+    pass
