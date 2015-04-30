@@ -1,3 +1,15 @@
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
 import argparse
 import re
 import six
@@ -141,7 +153,11 @@ class Resource(resource.Resource):
 
     """Clusters API methods"""
 
-    @command
+    @command(
+        parser_options=dict(
+            description='List all existing clusters',
+        ),
+    )
     @display_table(Cluster)
     def list(self):
         """
@@ -154,7 +170,11 @@ class Resource(resource.Resource):
             ClustersResponse,
             wrapper='clusters')
 
-    @command
+    @command(
+        parser_options=dict(
+            description='Display an existing cluster in detail',
+        ),
+    )
     @display_table(ClusterDetail)
     def get(self, cluster_id):
         """
@@ -168,17 +188,38 @@ class Resource(resource.Resource):
             ClusterResponse,
             wrapper='cluster')
 
-    @command(node_groups=argument(
-        '--node-group', type=parse_node_group, action='append',
-        help='Node group options; may be used multiple times to configure '
-             'multiple node groups. Each option should be in the form '
-             '<id>(<key>=<value>, ...), where <id> is a valid node group ID '
-             'for the stack and the key-value pairs are options to specify '
-             'for that node group. Current valid options are `count` and '
-             '`flavor_id`'))
+    @command(
+        parser_options=dict(
+            description='Create a new Lava cluster',
+            epilog='See also: http://www.rackspace.com/knowledge_center/'
+                   'article/manage-ssh-key-pairs-for-cloud-servers-with-'
+                   'python-novaclient'
+        ),
+        name=argument(help='Cluster name'),
+        username=argument(
+            help='Login name of the user to install onto the created nodes'),
+        keypair_name=argument(
+            help='SSH keypair name, which must have been created beforehand '
+                 'in nova.'),
+        stack_id=argument(
+            help='Valid Lava stack ID. For a list of stacks, use the '
+                 '`lava2 stacks list` command'),
+        node_groups=argument(
+            type=parse_node_group, action='append',
+            help='Node group options; may be used multiple times to '
+                 'configure multiple node groups. Each option should be in '
+                 'the form <id>(<key>=<value>, ...), where <id> is a valid '
+                 'node group ID for the stack and the key-value pairs are '
+                 'options to specify for that node group. Current valid '
+                 'options are `count` and `flavor_id`'),
+        wait=argument(
+            action='store_true',
+            help='Wait for the cluster to become active'
+        ),
+    )
     @display_table(ClusterDetail)
     def create(self, name, username, keypair_name, stack_id,
-               node_groups=None):
+               node_groups=None, wait=False):
         """
         Create a cluster
 
@@ -187,6 +228,8 @@ class Resource(resource.Resource):
         :param keypair_name: SSH keypair name
         :param stack_id: Valid stack identifier
         :param node_groups: List of node groups for the cluster
+        :param wait: If `True`, wait for the cluster to become active before
+                     returning
         :returns: Same as :func:`get`
         """
         data = dict(
@@ -201,12 +244,21 @@ class Resource(resource.Resource):
         request_data = self._marshal_request(
             data, ClusterCreateRequest, wrapper='cluster')
 
-        return self._parse_response(
+        cluster = self._parse_response(
             self._client._post('clusters', json=request_data),
             ClusterResponse,
             wrapper='cluster')
 
-    @command
+        if wait:
+            return self.wait(cluster.id)
+
+        return cluster
+
+    @command(
+        parser_options=dict(
+            description='Delete a cluster',
+        ),
+    )
     def delete(self, cluster_id):
         """
         Delete a cluster
@@ -217,8 +269,13 @@ class Resource(resource.Resource):
         self._client._delete('clusters/' + six.text_type(cluster_id))
 
     @command(
-        timeout=argument('--timeout', type=natural_number),
-        interval=argument('--interval', type=natural_number)
+        parser_options=dict(
+            description='Poll a cluster until it becomes active'
+        ),
+        timeout=argument(type=natural_number,
+                         help='Poll timeout (in minutes)'),
+        interval=argument(type=natural_number,
+                          help='Poll interval (in seconds)'),
     )
     @display_table(ClusterDetail)
     def wait(self, cluster_id, timeout=None, interval=None):

@@ -49,10 +49,17 @@ if __name__ == '__main__':
         description='Client library for Rackspace Cloud Big Data API',
 
         packages=find_packages(exclude=['tests']),
-        install_requires=[],
+
+        install_requires=[
+            'python-keystoneclient>=1.3.0',
+            'requests>=2.5.1',
+            'six>=1.9.0',
+            'python-dateutil>=2.4.2',
+            'figgis>=1.6.0',
+        ],
 
         classifiers=[
-            "Development Status :: 3 - Alpha",
+            "Development Status :: 4 - Beta",
             "Intended Audience :: Developers",
             "Intended Audience :: Information Technology",
             "License :: OSI Approved :: Apache Software License",

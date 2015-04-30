@@ -1,3 +1,15 @@
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
 import six
 import logging
 from figgis import Config, ListField, Field
@@ -59,7 +71,9 @@ class Resource(resource.Resource):
 
     """Scripts API methods"""
 
-    @command
+    @command(parser_options=dict(
+        description='List all existing cluster scripts',
+    ))
     @display_table(Script)
     def list(self):
         """
@@ -72,7 +86,16 @@ class Resource(resource.Resource):
             ScriptsResponse,
             wrapper='scripts')
 
-    @command(script_type=argument('script_type', choices=['post_init']))
+    @command(
+        parser_options=dict(
+            description='Create a cluster script',
+        ),
+        name=argument(help='Descriptive name for this script'),
+        url=argument(help='The URL from which the script may be downloaded'),
+        script_type=argument(metavar='<type>',
+                             choices=['post_init'],
+                             help='The type of script, e.g post-init script')
+    )
     @display_table(Script)
     def create(self, name, url, script_type):
         """
@@ -97,7 +120,16 @@ class Resource(resource.Resource):
             ScriptResponse,
             wrapper='script')
 
-    @command(script_type=argument('--type', choices=['post_init', None]))
+    @command(
+        parser_options=dict(
+            description='Update an existing script',
+        ),
+        name=argument(help='Descriptive name for this script'),
+        url=argument(help='The URL from which the script may be downloaded'),
+        script_type=argument('--type',
+                             choices=['post_init'],
+                             help='The type of script, e.g post-init script')
+    )
     @display_table(Script)
     def update(self, script_id, name=None, url=None, script_type=None):
         """
@@ -126,7 +158,9 @@ class Resource(resource.Resource):
             ScriptResponse,
             wrapper='script')
 
-    @command
+    @command(parser_options=dict(
+        description='Delete a cluster script',
+    ))
     def delete(self, script_id):
         """
         Delete a script.

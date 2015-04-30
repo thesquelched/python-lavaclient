@@ -1,12 +1,24 @@
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
 import logging
 import six
-import json
 from figgis import Config, ListField, Field
 
 from lavaclient2.api import resource
 from lavaclient2.api.response import Stack, StackDetail
 from lavaclient2.validators import Length, List, Range
-from lavaclient2.util import CommandLine, command, argument, display_table
+from lavaclient2.util import (CommandLine, command, argument, display_table,
+                              read_json)
 from lavaclient2.log import NullHandler
 
 
@@ -80,12 +92,67 @@ class CreateStackRequest(Config):
 # API Resource
 ######################################################################
 
+def indent(value, width=4):
+    if not value:
+        return value
+
+    lines = value.split('\n')
+    return '\n'.join(' ' * width + line for line in lines)
+
+
+SERVICE_CREATE_EPILOG = """\
+SERVICES
+
+Each cluster has a number of services installed, e.g. HDFS, Oozie, Hive, etc.
+When creating a custom stack, you must indicate which services you want to be
+installed. You can see a list of services available in a certain distribution
+using the following command:
+
+    lava2 distros get <distro_id>
+
+To specify the services you want to be included with your stack, you must pass
+in a valid JSON string containing a list of services, with each service being
+a JSON object in the following format:
+
+{services}
+
+Here is an example of a valid service list:
+
+    [{{"name": "HDFS", "modes": ["Secondary"]}},
+     {{"name": "YARN"}},
+     {{"name": "MapReduce"}}]
+
+NODE GROUPS
+
+Each service is comprised of one or more components. To create a custom stack,
+you must specify where each component should be installed by creating node
+groups. In addition to components, you can also control the node flavor and
+the number of nodes to create. For each service you include in your stack, you
+should include each service component in a node group.
+
+Like with services, node groups must be a string with valid JSON data,
+representing a list of JSON objects in the following format:
+
+{node_groups}
+
+Here's an example with two node groups:
+
+    [{{"id": "master", "count": 1, "flavor_id": "hadoop1-7",
+      "components: [{{"name": "Namenode"}}, {{"name": "ResourceManager"}}]}},
+     {{"id": "slave",
+      "components: [{{"name": "NodeManager"}}]}}]
+""".format(services=indent(Service.describe()),
+           node_groups=indent(NodeGroup.describe()))
+
+
 @six.add_metaclass(CommandLine)
 class Resource(resource.Resource):
 
     """Flavors API methods"""
 
-    @command
+    @command(parser_options=dict(
+        description='List all existing stacks',
+    ))
     @display_table(Stack)
     def list(self):
         """
@@ -98,7 +165,9 @@ class Resource(resource.Resource):
             StacksResponse,
             wrapper='stacks')
 
-    @command
+    @command(parser_options=dict(
+        description='Show a specific stack in detail',
+    ))
     @display_table(StackDetail)
     def get(self, stack_id):
         """
@@ -112,17 +181,19 @@ class Resource(resource.Resource):
             wrapper='stack')
 
     @command(
-        node_groups=argument(
-            '--node-groups', type=json.loads,
-            help='Json string containing an array with the following '
-                 'elements: {0}; Component is an array with the following '
-                 'elements: {1}'.format(
-                     NodeGroup._describe(),
-                     Component._describe())),
-        services=argument(
-            'services', type=json.loads,
-            help='Json string containing an array with the following '
-                 'elements: {0}'.format(Service._describe()))
+        parser_options=dict(
+            description='Create a custom stack',
+            epilog=SERVICE_CREATE_EPILOG,
+        ),
+        name=argument(help='A stack identifier, e.g. MY_HADOOP_STACK'),
+        distro=argument(help='An existing distribution ID; see '
+                             '`lava2 distros list`'),
+        services=argument(type=read_json,
+                          help='JSON data string or path to file containing '
+                               'JSON data; see SERVICES'),
+        node_groups=argument(type=read_json,
+                             help='JSON data string or p ath to file '
+                                  'containing JSON data; see NODE GROUPS')
     )
     @display_table(StackDetail)
     def create(self, name, distro, services, node_groups=None):
@@ -152,7 +223,9 @@ class Resource(resource.Resource):
             StackResponse,
             wrapper='stack')
 
-    @command
+    @command(parser_options=dict(
+        description='Delete a custom stack',
+    ))
     def delete(self, stack_id):
         """
         Delete a stack

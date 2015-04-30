@@ -78,7 +78,9 @@ def test_delete(mock_client):
 @patch('lavaclient2.api.clusters.elapsed_minutes',
        MagicMock(side_effect=[0.0, 1.0, 2.0]))
 @patch('time.sleep', MagicMock)
-def test_wait(print_table, print_single_table, mock_client, cluster_response):
+@patch('sys.stdout')
+def test_wait(stdout, print_table, print_single_table, mock_client,
+              cluster_response):
     building = deepcopy(cluster_response)
     building['cluster']['status'] = 'BUILDING'
     configuring = deepcopy(cluster_response)
@@ -88,8 +90,7 @@ def test_wait(print_table, print_single_table, mock_client, cluster_response):
 
     mock_client._request.side_effect = [building, configuring, active]
 
-    with patch('sys.stdout') as stdout, \
-            patch.object(mock_client.clusters, '_command_line', True):
+    with patch.object(mock_client.clusters, '_command_line', True):
         main()
         stdout.write.assert_has_calls([
             call('Waiting for cluster cluster_id'),

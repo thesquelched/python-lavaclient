@@ -14,12 +14,15 @@
 Utility functions
 """
 
+import json
+import argparse
 import math
 import textwrap
 import six
 import binascii
 import base64
 import functools
+import os.path
 from collections import namedtuple
 from figgis import Config
 from prettytable import PrettyTable
@@ -224,7 +227,7 @@ def post_binary(value):
     return six.text_type(value)
 
 
-Command = namedtuple('Command', ['arguments', 'function'])
+Command = namedtuple('Command', ['arguments', 'function', 'parser_options'])
 
 
 class argument(object):
@@ -243,6 +246,19 @@ class argument(object):
             self.args, self.kwargs)
 
 
+class mutually_exclusive(object):
+
+    """Represents mutually exclusive optional arguments"""
+
+    def __init__(self, arguments):
+        self.arguments = arguments
+
+    def add_to_parser(self, parser):
+        group = parser.add_mutually_exclusive_group()
+        for arg in self.arguments:
+            group.add_argument(*arg.args, **arg.kwargs)
+
+
 def get_function_arguments(func):
     """Return (args, kwargs) for func, excluding `self`"""
     code = six.get_function_code(func)
@@ -255,13 +271,93 @@ def get_function_arguments(func):
     return arg_names[:n_required], arg_names[n_required:]
 
 
+def _required_argument(name, arg):
+    """Process a required argument"""
+    if arg.args and arg.args[0] != name:
+        raise ValueError(
+            "Positional argument '{0}' must have the same name as "
+            "the function argument, '{1}'".format(arg.args[0], name))
+    elif not arg.args:
+        arg.args = (name,)
+
+    arg.kwargs.update(
+        metavar=arg.kwargs.get('metavar', '<{0}>'.format(name)))
+
+    return arg
+
+
+def _optional_argument(name, arg):
+    """Process an optional argument"""
+    # Automatically inject option string
+    if not arg.args:
+        arg.args = ('--' + name.replace('_', '-'),)
+
+    arg.kwargs.update(dest=name)
+
+    return arg
+
+
+def _default_optional_argument(varname):
+    """Return the default argparse options for a function variable"""
+    return argument('--' + varname.replace('_', '-'),
+                    metavar='<{0}>'.format(varname))
+
+
 def command(*args, **kwargs):
-    """Decorator that creates an argparse subparser for the decorated
-    function"""
+    """
+    command(parser_help=None, **arguments)
+
+    Decorator that creates an argparse subparser for the decorated function.
+    Each argument key should be the name of n argument in the decorator
+    function, while the argument value should be a call to the `argument`
+    function, which acts as a pass-through to argparse's `add_argument`
+    function.  Note that you do not have to specify the name in the call to
+    `argument`, as it will be automatically injected.
+
+    Positional function arguments should be positional argparse arguments as
+    well, and likewise with keyword arguments and argparse optional arguments.
+    Any arguments not included will be automatically added with no help text.
+
+    Note that the `dest` option to `add_argument` will always be overridden so
+    that it properly matches the decorated fuction argument names.
+
+    :param parser_help: An optional help string to be passed to the subparser
+                        that contains the argument for the decorated function
+
+    Examples:
+
+    >>> class MyResource(Resource):
+
+            @command(parser_options={
+                        'help: 'Get the thing',
+                        'epilog': 'Some additional help text at the end'},
+                     thing_id=argument(type=int, help='The ID for the thing'),
+                     an_option=argument('--my-option', '-m'))
+            def get_thing(self, thing_id, an_option=None)
+                # do some stuff
+                pass
+
+            @command
+            def do_something(self, name, value, some_option=None):
+                # Automatically inject all options
+                pass
+    """
+    FORBIDDEN_KEYS = frozenset(['parents', 'formatter_class'])
+
     if args and (kwargs or not callable(args[0])):
         raise TypeError('command() takes zero or more keyword arguments')
 
-    def decorator(func):
+    parser_options = kwargs.pop('parser_options', {})
+    if not isinstance(parser_options, dict):
+        raise TypeError('parser_options must be a dictionary of arguments to '
+                        'pass in during subparser creation')
+
+    if frozenset(parser_options.keys()).intersection(FORBIDDEN_KEYS):
+        raise TypeError('You may not include the following keys in '
+                        'parser_options: {0}'.format(
+                            ', '.join(FORBIDDEN_KEYS)))
+
+    def decorator(func, parser_options=parser_options):
         required, optional = get_function_arguments(func)
 
         arguments = []
@@ -269,28 +365,22 @@ def command(*args, **kwargs):
         # Add positional arguments
         for name in required:
             arg = kwargs.get(name, argument(name))
-            if not arg.args or arg.args[0] != name:
-                raise ValueError(
-                    "Positional argument '{0}' must have the same name as "
-                    "the function argument, '{1}'".format(arg.args[0], name))
-
-            arg.kwargs.update(
-                metavar=arg.kwargs.get('metavar', '<{0}>'.format(name)))
-
-            arguments.append(arg)
+            arguments.append(_required_argument(name, arg))
 
         # Add optional arguments
-        for i, name in enumerate(optional):
-            if name not in kwargs:
-                arg = argument('--' + name.replace('_', '-'),
-                               metavar='<{0}>'.format(name))
+        for name in optional:
+            arg = kwargs.get(name, _default_optional_argument(name))
+
+            if isinstance(arg, mutually_exclusive):
+                argument.append(mutually_exclusive([
+                    _optional_argument(name, item)
+                    for item in arg.arguments]))
             else:
-                arg = kwargs[name]
+                arguments.append(_optional_argument(name, arg))
 
-            arg.kwargs.update(dest=name)
-            arguments.append(arg)
-
-        return Command(arguments=arguments, function=func)
+        return Command(arguments=arguments,
+                       parser_options=parser_options,
+                       function=func)
 
     return decorator(args[0]) if args else decorator
 
@@ -299,22 +389,30 @@ class CommandLine(type):
 
     def __new__(cls, name, bases, dct):
         arguments = {}
+        parser_options = {}
 
         # Get list of items before modifying dct
         for key, value in list(dct.items()):
             if isinstance(value, Command):
                 arguments[key] = value.arguments
+                parser_options[key] = value.parser_options
                 dct[key] = value.function
 
         @classmethod
-        def add_arguments(cls, parser_base, parser, arguments=arguments,):
+        def add_arguments(cls, parser_base, parser, arguments=arguments,
+                          parser_options=parser_options):
             subparsers = parser.add_subparsers()
 
             for cmd, args in arguments.items():
-                subparser = subparsers.add_parser(cmd, parents=[parser_base])
+                parser_opts = parser_options.get(cmd, {})
+                subparser = subparsers.add_parser(
+                    cmd, parents=[parser_base],
+                    formatter_class=argparse.RawDescriptionHelpFormatter,
+                    **parser_opts)
                 subparser.set_defaults(command=cmd)
+                group = subparser.add_argument_group('Command Arguments')
                 for arg in args:
-                    arg.add_to_parser(subparser)
+                    arg.add_to_parser(group)
 
         dct['_add_arguments'] = add_arguments
 
@@ -379,3 +477,15 @@ def first_exists(*args):
 
     return next((item for item in args if item),
                 args[-1])
+
+
+def read_json(value):
+    """Either parse a raw JSON string or read JSON data from a file"""
+    try:
+        return json.loads(value)
+    except ValueError:
+        pass
+
+    fullpath = os.path.abspath(os.path.expanduser(os.path.expandvars(value)))
+    with open(fullpath) as handle:
+        return json.load(handle)
