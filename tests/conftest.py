@@ -296,7 +296,7 @@ def node(link_response):
     return {
         'id': 'node_id',
         'name': 'NODENAME',
-        'status': 'status',
+        'status': 'ACTIVE',
         'created': '2014-01-01',
         'updated': None,
         'flavor_id': 'flavor_id',
@@ -318,7 +318,7 @@ def node(link_response):
         'components': [
             {
                 "name": 'component_name',
-                "uri": 'url'
+                "uri": 'http://host'
             }
         ],
         "links": [link_response]

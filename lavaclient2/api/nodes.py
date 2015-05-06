@@ -29,7 +29,9 @@ class NodesResponse(Config):
 class Resource(resource.Resource):
 
     """Nodes API methods"""
-    @command
+    @command(parser_options=dict(
+        description='List all nodes in a cluster'
+    ))
     @display_table(Node)
     def list(self, cluster_id):
         """

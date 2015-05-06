@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import itertools
 import argparse
 import re
 import six
@@ -22,7 +23,8 @@ from figgis import Config, ListField, Field
 from lavaclient2.api import resource
 from lavaclient2.api.response import Cluster, ClusterDetail, Node
 from lavaclient2 import validators, error
-from lavaclient2.util import CommandLine, argument, command, display_table
+from lavaclient2.util import (CommandLine, argument, command, display_table,
+                              coroutine, create_socks_proxy)
 from lavaclient2.log import NullHandler
 
 
@@ -32,6 +34,11 @@ LOG.addHandler(NullHandler())
 
 WAIT_INTERVAL = 30
 MIN_INTERVAL = 10
+
+
+IN_PROGRESS_STATES = frozenset([
+    'BUILDING', 'BUILD', 'CONFIGURING', 'CONFIGURED', 'UPDATING', 'REBOOTING',
+    'RESIZING', 'WAITING'])
 
 
 def natural_number(value):
@@ -120,32 +127,6 @@ def parse_node_group(value):
 
 def elapsed_minutes(start):
     return (datetime.now() - start).total_seconds() / 60
-
-
-def wait_coroutine(command_line, start):
-    """Coroutine that runs during the wait command. Prints status to stdout if
-    the command line is running; otherwise, just log the status."""
-
-    started = False
-
-    while True:
-        cluster = yield
-        LOG.debug('Cluster {0}: {1}'.format(cluster.id, cluster.status))
-
-        if command_line:
-            if not started:
-                started = True
-                cli_msg_length = 0
-                six.print_('Waiting for cluster {0}'.format(cluster.id))
-
-            msg = 'Status: {0} (Elapsed time: {1:.1f} minutes)'.format(
-                cluster.status, elapsed_minutes(start))
-            sys.stdout.write('\b' * cli_msg_length + msg)
-            sys.stdout.flush()
-            cli_msg_length = len(msg)
-
-            if cluster.status == 'ACTIVE':
-                six.print_('\n')
 
 
 @six.add_metaclass(CommandLine)
@@ -268,6 +249,32 @@ class Resource(resource.Resource):
         """
         self._client._delete('clusters/' + six.text_type(cluster_id))
 
+    @coroutine
+    def cli_wait_printer(self, start):
+        """Coroutine that runs during the wait command. Prints status to stdout if
+        the command line is running; otherwise, just log the status."""
+
+        started = False
+
+        while True:
+            cluster = yield
+            LOG.debug('Cluster {0}: {1}'.format(cluster.id, cluster.status))
+
+            if self._command_line:
+                if not started:
+                    started = True
+                    cli_msg_length = 0
+                    six.print_('Waiting for cluster {0}'.format(cluster.id))
+
+                msg = 'Status: {0} (Elapsed time: {1:.1f} minutes)'.format(
+                    cluster.status, elapsed_minutes(start))
+                sys.stdout.write('\b' * cli_msg_length + msg)
+                sys.stdout.flush()
+                cli_msg_length = len(msg)
+
+                if cluster.status == 'ACTIVE':
+                    six.print_('\n')
+
     @command(
         parser_options=dict(
             description='Poll a cluster until it becomes active'
@@ -292,23 +299,19 @@ class Resource(resource.Resource):
         interval = max(MIN_INTERVAL, interval)
 
         delta = timedelta(minutes=timeout) if timeout else timedelta(days=365)
-        in_progress_states = frozenset([
-            'BUILDING', 'BUILD', 'CONFIGURING', 'CONFIGURED', 'UPDATING',
-            'REBOOTING', 'RESIZING', 'WAITING'])
 
         start = datetime.now()
         timeout_date = start + delta
 
-        printer_coro = wait_coroutine(self._command_line, start)
-        printer_coro.send(None)  # Like running next, but py2/3 compatible
+        printer = self.cli_wait_printer(start)
 
         while datetime.now() < timeout_date:
             cluster = self.get(cluster_id)
-            printer_coro.send(cluster)
+            printer.send(cluster)
 
             if cluster.status == 'ACTIVE':
                 return cluster
-            elif cluster.status not in in_progress_states:
+            elif cluster.status not in IN_PROGRESS_STATES:
                 raise error.FailedError(
                     'Cluster status is {0}'.format(cluster.status))
 
@@ -320,12 +323,111 @@ class Resource(resource.Resource):
         raise error.TimeoutError(
             'Cluster did not become active before timeout')
 
-    @command
+    @command(parser_options=dict(
+        description='List all nodes in the cluster'
+    ))
     @display_table(Node)
     def nodes(self, cluster_id):
         """
         Get the cluster nodes
-        :param cluster_id:
-        :return: nodes of the cluster
+
+        :param cluster_id: Cluster ID
+        :returns: nodes of the cluster
         """
         return self._client.nodes.list(cluster_id)
+
+    def _get_named_node(self, node_name, nodes):
+        try:
+            ssh_node = six.next(node for node in nodes
+                                if node.name.lower() == node_name.lower())
+        except StopIteration:
+            raise error.InvalidError(
+                'Invalid node: {0}; available nodes are {1}'.format(
+                    node_name, ', '.join(node.name for node in nodes)))
+
+        if ssh_node.status.upper() != 'ACTIVE':
+            raise error.InvalidError(
+                'Node {0} must be ACTIVE, but is {1} instead'.format(
+                    node_name, ssh_node.status))
+
+        return ssh_node
+
+    @command(
+        parser_options=dict(
+            description='Create a SOCKS5 proxy over SSH to a node in the '
+                        'cluster'
+        ),
+        port=argument(type=int, help='Port on localhost on which to create '
+                                     'the proxy'),
+        node_name=argument(help='Name of node on which to make the SSH '
+                                'connection, e.g. gateway-1. By default, use '
+                                'first available node.'),
+        ssh_options=argument(help='Additonal options to pass to the ssh '
+                                  'command'),
+        wait=argument(action='store_true',
+                      help="Wait for cluster to become active (if it isn't "
+                           "already)"),
+    )
+    def ssh_proxy(self, cluster_id, port=None, node_name=None,
+                  ssh_options=None, wait=False):
+        """
+        Set up a SOCKS5 proxy over SSH to a node in the cluster. Returns the
+        SSH process (via :class:`Popen`), which can be stopped via the
+        :func:`kill` method.
+
+        :param cluster_id: Cluster ID
+        :param port: Local port on which to create the proxy (default: 12345)
+        :param node_name: Name of node on which to make the SSH connection. By
+                          default, use first available node.
+        :param wait: If `True`, wait for the cluster to become active before
+                     creating the proxy
+        :returns: :class:`Popen` object representing the SSH connection.
+        """
+        if port is None:
+            port = 12345
+
+        cluster = self.get(cluster_id)
+        status = cluster.status.upper()
+        if status != 'ACTIVE':
+            LOG.debug('Cluster status: %s', status)
+
+            if status not in IN_PROGRESS_STATES:
+                raise error.InvalidError(
+                    'Cluster is in state {0}'.format(status))
+            elif not wait:
+                raise error.InvalidError('Cluster is not yet active')
+
+            self.wait(cluster_id)
+
+        nodes = self.nodes(cluster_id)
+        if node_name:
+            ssh_node = self._get_named_node(node_name, nodes)
+        else:
+            ssh_node = nodes[0]
+
+        # Get a URL to test the proxy against
+        all_urls = itertools.chain.from_iterable(
+            [component['uri'] for component in node.components
+             if 'uri' in component and component['uri'].startswith('http')]
+            for node in nodes)
+        test_url = six.next(all_urls, None)
+
+        printer = self._cli_printer(LOG)
+        printer('Starting SOCKS proxy via node {0} ({1})'.format(
+            ssh_node.name, ssh_node.public_ip))
+
+        process = create_socks_proxy(ssh_node.public_ip, port,
+                                     ssh_options=ssh_options,
+                                     test_url=test_url)
+
+        printer('Successfully created SOCKS proxy on localhost:{0}'.format(
+            port), logging.INFO)
+
+        if not self._command_line:
+            return process
+
+        try:
+            printer('Use Ctrl-C to stop proxy', logging.NOTSET)
+            process.communicate()
+        except KeyboardInterrupt:
+            printer('SOCKS proxy closed')

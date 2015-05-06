@@ -1,3 +1,5 @@
+import socks
+import subprocess
 import pytest
 from mock import patch, call, MagicMock
 from datetime import datetime
@@ -129,7 +131,93 @@ def test_nodes(print_table, mock_client, nodes_response):
 
     (data, header), kwargs = print_table.call_args
     alldata = [entry for entry in list(data)[0]]
-    assert alldata[:6] == ['node_id', 'NODENAME', '[]', 'status', '1.2.3.4',
+    assert alldata[:6] == ['node_id', 'NODENAME', '[]', 'ACTIVE', '1.2.3.4',
                            '5.6.7.8']
     assert header == Node.table_header
     assert kwargs['title'] is None
+
+
+@patch('subprocess.Popen')
+def test_ssh_proxy(popen, mock_client, cluster_response, nodes_response):
+    del nodes_response['nodes'][0]['components'][0]['uri']
+
+    popen.return_value = MagicMock(
+        poll=MagicMock(return_value=None),
+        communicate=MagicMock(return_value=('stdout', 'stderr'))
+    )
+    mock_client._request.side_effect = [cluster_response, nodes_response]
+
+    with patch('sys.argv', ['lava2', 'clusters', 'ssh_proxy', 'cluster_id',
+                            '--node-name', 'NODENAME', '--port', '54321']):
+        main()
+
+    popen.assert_called_with(
+        ['ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes',
+         '-N', '-D', '54321', '1.2.3.4'],
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE)
+
+
+@pytest.mark.parametrize('failure', [None,
+                                     socks.ProxyConnectionError,
+                                     socks.GeneralProxyError])
+@patch('subprocess.Popen')
+@patch('lavaclient2.util.test_socks_connection')
+def test_ssh_proxy_errors(test_connection, popen, failure, mock_client,
+                          cluster_response, nodes_response):
+    del nodes_response['nodes'][0]['components'][0]['uri']
+
+    popen.return_value = MagicMock(
+        poll=MagicMock(return_value=None),
+        communicate=MagicMock(return_value=('stdout', 'stderr'))
+    )
+    if failure:
+        test_connection.side_effect = [failure, 200]
+    else:
+        test_connection.return_value = 200
+
+    mock_client._request.side_effect = [cluster_response, nodes_response]
+
+    with patch('sys.argv', ['lava2', 'clusters', 'ssh_proxy', 'cluster_id',
+                            '--node-name', 'NODENAME', '--port',
+                            '54321']):
+        main()
+
+    popen.assert_called_with(
+        ['ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes',
+         '-N', '-D', '54321', '1.2.3.4'],
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE)
+
+
+@patch('subprocess.Popen')
+def test_ssh_proxy_cmd_fail(popen, mock_client, cluster_response,
+                            nodes_response):
+    popen.return_value = MagicMock(
+        poll=MagicMock(return_value=1),
+        communicate=MagicMock(return_value=('stdout', 'stderr'))
+    )
+    mock_client._request.side_effect = [cluster_response, nodes_response]
+
+    with patch('sys.argv', ['lava2', 'clusters', 'ssh_proxy', 'cluster_id',
+                            '--node-name', 'NODENAME', '--port',
+                            '54321']):
+        pytest.raises(Exception, main)
+
+
+@pytest.mark.parametrize('error_code', [400, 500])
+@patch('subprocess.Popen')
+@patch('lavaclient2.util.test_socks_connection')
+def test_ssh_proxy_http_fail(test_connection, popen, error_code, mock_client,
+                             cluster_response, nodes_response):
+    popen.return_value = MagicMock(
+        poll=MagicMock(return_value=None),
+        communicate=MagicMock(return_value=('stdout', 'stderr'))
+    )
+    test_connection.return_value = error_code
+    mock_client._request.side_effect = [cluster_response, nodes_response]
+
+    with patch('sys.argv', ['lava2', 'clusters', 'ssh_proxy', 'cluster_id',
+                            '--node-name', 'NODENAME', '--port',
+                            '54321']):
+        pytest.raises(Exception, main)

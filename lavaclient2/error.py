@@ -47,3 +47,13 @@ class FailedError(LavaError):
 class TimeoutError(LavaError):
     """The action timed out"""
     pass
+
+
+class NotFoundError(LavaError):
+    """The desired information was not found or did not exist"""
+    pass
+
+
+class ProxyError(LavaError):
+    """Error in SOCKS proxy over SSH"""
+    pass

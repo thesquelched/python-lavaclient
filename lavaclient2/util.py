@@ -14,6 +14,10 @@
 Utility functions
 """
 
+import shlex
+import subprocess
+import logging
+import time
 import json
 import argparse
 import math
@@ -21,11 +25,62 @@ import textwrap
 import six
 import binascii
 import base64
-import functools
 import os.path
+import six.moves.urllib as urllib
+import socks
+from sockshandler import SocksiPyHandler
+from functools import wraps
 from collections import namedtuple
 from figgis import Config
 from prettytable import PrettyTable
+
+from lavaclient2.log import NullHandler
+from lavaclient2 import error
+
+
+RETRY_DEFAULT_ATTEMPTS = 3
+RETRY_DEFAULT_DELAY = 1
+RETRY_DEFAULT_BACKOFF = 2
+
+
+LOG = logging.getLogger(__name__)
+LOG.addHandler(NullHandler())
+
+
+def retry(*args, **kwargs):
+    """Retry decorator"""
+    attempts = max(kwargs.get('attempts', RETRY_DEFAULT_ATTEMPTS), 1)
+    delay = max(kwargs.get('delay', RETRY_DEFAULT_DELAY), 0)
+    backoff = max(kwargs.get('backoff', RETRY_DEFAULT_BACKOFF), 0)
+
+    exceptions = kwargs.get('exceptions')
+    if exceptions is None:
+        exceptions = (Exception,)
+    elif isinstance(exceptions, Exception):
+        exceptions = (exceptions,)
+    else:
+        exceptions = tuple(exceptions)
+
+    def decorator(func):
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            delay_time = delay
+
+            for attempt in six.moves.range(1, attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as exc:
+                    LOG.debug('Attempt %d failed', attempt, exc_info=exc)
+                    if attempt == attempts:
+                        raise
+
+                    time.sleep(delay_time)
+                    delay_time *= backoff
+
+            assert False, "This should never ever happen"
+
+        return wrapped
+    return decorator(args[0]) if args and callable(args[0]) else decorator
 
 
 def strip_url(url):
@@ -118,7 +173,7 @@ def no_nulls(data):
 def getattrs(item, path):
     """Like getattr, but works will paths, e.g. 'foo.bar', which will return
     item.foo.bar"""
-    return functools.reduce(getattr, path.split('.'), item)
+    return six.moves.reduce(getattr, path.split('.'), item)
 
 
 def table_attributes(response_class):
@@ -489,3 +544,71 @@ def read_json(value):
     fullpath = os.path.abspath(os.path.expanduser(os.path.expandvars(value)))
     with open(fullpath) as handle:
         return json.load(handle)
+
+
+def coroutine(func):
+    """Decorator that simplifies making a coroutine"""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        coro = func(*args, **kwargs)
+        coro.send(None)
+        return coro
+    return wrapper
+
+
+@retry(attempts=5,
+       exceptions=[socks.ProxyConnectionError, socks.GeneralProxyError])
+def test_socks_connection(url, proxy_host, proxy_port):
+    """Return HTTP code from opening URL via SOCKS proxy"""
+    opener = urllib.request.build_opener(
+        SocksiPyHandler(socks.PROXY_TYPE_SOCKS5, proxy_host, proxy_port))
+    resp = opener.open(url)
+    try:
+        return resp.code
+    finally:
+        resp.close()
+
+
+def create_socks_proxy(host, port, ssh_options=None, test_url=None):
+    """Create a SOCKS proxy via SSH"""
+    if isinstance(ssh_options, six.text_type):
+        ssh_options = shlex.split(ssh_options)
+    elif ssh_options is None:
+        ssh_options = []
+
+    process = subprocess.Popen(
+        ['ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes',
+            '-N', '-D', str(port)] + list(map(str, ssh_options)) + [host],
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE)
+
+    if not test_url:
+        if process.poll():
+            output, _ = process.communicate()
+            LOG.critical('SOCKS proxy failed: %s', output)
+            raise error.LavaError('Failed to set up SOCKS proxy')
+
+        LOG.warn("No test URI's found; proxy may not be established yet")
+        return process
+
+    if process.poll():
+        output, _ = process.communicate()
+        LOG.critical('SOCKS proxy failed: %s', output)
+        raise error.LavaError('Failed to set up SOCKS proxy')
+
+    try:
+        code = test_socks_connection(test_url, '127.0.0.1', port)
+        if code >= 400:
+            LOG.debug('Connection to %s through SOCKS proxy failed '
+                      'with HTTP code %d', test_url, code)
+            raise error.ProxyError('SOCKS proxy connection failed')
+
+        return process
+    except socks.ProxyConnectionError as exc:
+        process.kill()
+        LOG.critical('Failed to establish SOCKS proxy', exc_info=exc)
+        six.raise_from(error.ProxyError('Failed to establish SOCKS proxy'),
+                       exc)
+    except Exception:
+        process.kill()
+        raise

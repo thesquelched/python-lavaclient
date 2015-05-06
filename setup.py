@@ -56,6 +56,7 @@ if __name__ == '__main__':
             'six>=1.9.0',
             'python-dateutil>=2.4.2',
             'figgis>=1.6.0',
+            'PySocks>=1.5.4',
         ],
 
         classifiers=[

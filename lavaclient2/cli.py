@@ -67,7 +67,7 @@ def create_client(args):
             endpoint=first_exists(args.endpoint,
                                   os.environ.get('LAVA2_API_URL')),
             verify_ssl=args.verify_ssl,
-            _enable_cli=True)
+            _enable_cli=args.enable_cli)
     except LavaError as exc:
         six.print_('Error during authentication: {0}'.format(exc),
                    file=sys.stderr)
@@ -75,6 +75,19 @@ def create_client(args):
             raise
 
         sys.exit(1)
+
+
+def lava_shell(client, args):
+    """Start an embeded IPython shell with the client already defined"""
+    try:
+        from IPython.terminal.embed import InteractiveShellEmbed
+    except ImportError:
+        six.print_('ERROR: shell command requires ipython to be installed',
+                   file=sys.stderr)
+        sys.exit(1)
+
+    shell = InteractiveShellEmbed(user_ns={'lava': client})
+    shell("Lava client is stored in 'lava' variable")
 
 
 def print_action(func, *args, **kwargs):
@@ -95,24 +108,35 @@ def call_action(func, args):
     return print_action(func, *f_args, **f_kwargs)
 
 
-def print_auth_token(client):
+def print_auth_token(client, args):
+    """Print the authentication token"""
     six.print_('AUTH_TOKEN={0}'.format(client.token))
 
 
-def execute_command(args):
+# Dispatch for non-API commands
+COMMAND_DISPATCH = dict(
+    shell=lava_shell,
+    authenticate=print_auth_token,
+)
+
+
+def execute_command(client, args):
     """
     Execute lava command
     """
     resource = args.resource
-    command = args.command
+    if resource == 'shell':
+        args.enable_cli = False
 
     client = create_client(args)
 
-    if resource == 'authenticate':
-        print_auth_token(client)
+    if resource in COMMAND_DISPATCH:
+        COMMAND_DISPATCH[resource](client, args)
         sys.exit(0)
 
+    command = args.command
     action = getattr(getattr(client, resource), command)
+
     call_action(action, args)
 
 
@@ -167,14 +191,15 @@ def parse_argv():
     general.add_argument('--insecure', '-k', action='store_false',
                          dest='verify_ssl',
                          help='Turn of SSL cert validation')
+    general.set_defaults(enable_cli=True)
 
     parser = argparse.ArgumentParser(prog='lava2', parents=[parser_base])
     subparsers = parser.add_subparsers(title='Commands')
 
-    # Add 'authenticate' command
-    (subparsers.add_parser('authenticate', parents=[parser_base])
-               .set_defaults(resource='authenticate',
-                             command='authenticate'))
+    for command, func in COMMAND_DISPATCH.items():
+        (subparsers.add_parser(command, parents=[parser_base],
+                               description=func.__doc__)
+                   .set_defaults(resource=command, command=command))
 
     for module in (clusters, limits, flavors, stacks, distros, workloads,
                    scripts, nodes):
@@ -195,7 +220,14 @@ def main():
     initialize_logging(args)
 
     try:
-        execute_command(args)
+        client = create_client(args)
+    except Exception as exc:
+        LOG.critical('Error while creating client', exc_info=exc)
+        six.print_('ERROR: {0}'.format(exc), file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        execute_command(client, args)
     except Exception as exc:
         LOG.debug('Error while executing command', exc_info=exc)
         six.print_('ERROR: {0}'.format(exc), file=sys.stderr)

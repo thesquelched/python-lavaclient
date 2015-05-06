@@ -12,6 +12,7 @@
 
 import logging
 import figgis
+import six
 
 from lavaclient2 import error
 from lavaclient2.log import NullHandler
@@ -80,3 +81,19 @@ class Resource(object):
             msg = 'Invalid request data: {0}'.format(exc)
             LOG.critical(msg, exc_info=exc)
             raise error.InvalidError(msg)
+
+    def _cli_printer(self, logger=None):
+        """Create a function that logs the messages send to it, then prints
+        them to stdout if the command line is enabled"""
+        if logger is None:
+            logger = LOG
+
+        def printer(message, level=None, logger=logger):
+            if level is None:
+                level = logging.DEBUG
+
+            logger.log(level, message)
+            if self._command_line:
+                six.print_(message)
+
+        return printer
