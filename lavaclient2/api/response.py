@@ -101,7 +101,21 @@ class NodeGroup(Config, IdReprMixin):
     components = ListField(dict, default={})
 
 
-class Cluster(Config, IdReprMixin):
+class ClusterScript(Config):
+
+    id = Field(six.text_type, required=True)
+    name = Field(six.text_type, required=True)
+    status = Field(six.text_type, required=True)
+
+
+class BaseCluster(object):
+
+    @property
+    def nodes(self):
+        return self._client.clusters.nodes(self.id)
+
+
+class Cluster(Config, IdReprMixin, BaseCluster):
 
     table_columns = ('id', 'name', 'status', 'stack_id', 'created')
     table_header = ('ID', 'Name', 'Status', 'Stack', 'Created')
@@ -116,14 +130,7 @@ class Cluster(Config, IdReprMixin):
     links = ListField(Link, required=True)
 
 
-class ClusterScript(Config):
-
-    id = Field(six.text_type, required=True)
-    name = Field(six.text_type, required=True)
-    status = Field(six.text_type, required=True)
-
-
-class ClusterDetail(Config, IdReprMixin):
+class ClusterDetail(Config, IdReprMixin, BaseCluster):
 
     __inherits__ = [Cluster]
 

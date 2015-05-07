@@ -612,3 +612,19 @@ def create_socks_proxy(host, port, ssh_options=None, test_url=None):
     except Exception:
         process.kill()
         raise
+
+
+def inject_client(client, obj):
+    """Inject the `_client` attribute into every figgis.Config nested in the
+    object"""
+    if isinstance(obj, Config):
+        obj._client = client
+        inject_client(client, list(obj._properties.values()))
+    elif isinstance(obj, (list, tuple)):
+        for item in obj:
+            inject_client(client, item)
+    elif isinstance(obj, dict):
+        for item in obj.values():
+            inject_client(client, item)
+
+    return obj

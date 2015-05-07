@@ -1,5 +1,5 @@
 import pytest
-from mock import patch
+from mock import patch, MagicMock
 
 from lavaclient2.api import response
 from lavaclient2 import error
@@ -101,3 +101,31 @@ def test_api_cluster_nodes(lavaclient, nodes_response):
         assert isinstance(resp, list)
         assert len(resp) == 1
         assert all(isinstance(item, response.Node) for item in resp)
+
+
+def test_api_cluster_nodes_property(lavaclient, nodes_response,
+                                    cluster_response):
+    with patch.object(lavaclient, '_request',
+                      MagicMock(return_value=cluster_response)):
+        cluster = lavaclient.clusters.get('cluster_id')
+        assert isinstance(cluster, response.ClusterDetail)
+
+    with patch.object(lavaclient, '_request',
+                      MagicMock(return_value=nodes_response)):
+        nodes = cluster.nodes
+        assert all(isinstance(node, response.Node) for node in nodes)
+
+
+def test_api_clusters_nodes_property(lavaclient, nodes_response,
+                                     clusters_response):
+    with patch.object(lavaclient, '_request',
+                      MagicMock(return_value=clusters_response)):
+        clusters = lavaclient.clusters.list()
+        assert all(isinstance(cluster, response.Cluster)
+                   for cluster in clusters)
+
+    with patch.object(lavaclient, '_request',
+                      MagicMock(return_value=nodes_response)):
+        for cluster in clusters:
+            nodes = cluster.nodes
+            assert all(isinstance(node, response.Node) for node in nodes)

@@ -16,6 +16,7 @@ import six
 
 from lavaclient2 import error
 from lavaclient2.log import NullHandler
+from lavaclient2.util import inject_client
 
 
 LOG = logging.getLogger(__name__)
@@ -54,13 +55,17 @@ class Resource(object):
         Parse json data using the response class, returning
         response_class(data).  If wrapper is not None, return the attribute in
         wrapper instead of the object itself.
+
+        After parsing the data, the client object is injected into any Config
+        objects. This allows Config objects to potentially make further API
+        queries.
         """
         if wrapper is not None and not hasattr(response_class, wrapper):
             raise AttributeError('{0} does not have attribute {1}'.format(
                 response_class.__name__, wrapper))
 
         try:
-            response = response_class(data)
+            response = inject_client(self._client, response_class(data))
             return response if wrapper is None else response.get(wrapper)
         except (figgis.PropertyError, figgis.ValidationError) as exc:
             msg = 'Invalid response: {0}'.format(exc)

@@ -1,6 +1,7 @@
 import pytest
 import six
 from mock import patch
+from figgis import Config, Field, ListField
 
 from lavaclient2 import util
 
@@ -117,3 +118,38 @@ def test_print_single_table(data, header, title, output):
         util.print_single_table(data, header, title=title)
 
     assert strio.getvalue() == output
+
+
+def test_inject_client():
+    class SubSubConf(Config):
+        field = Field(int)
+
+    class SubConf(Config):
+        foo = Field(SubSubConf)
+        bar = ListField(SubSubConf)
+        baz = Field(int)
+
+    class Conf(Config):
+        one = Field(SubConf)
+        two = ListField(SubConf)
+        three = Field(int)
+
+    client = object()
+    subsubconf = dict(field=1)
+    subconf = dict(foo=subsubconf, bar=[subsubconf, subsubconf], baz=1)
+    conf = util.inject_client(
+        client,
+        Conf(one=subconf,
+             two=[subconf, subconf],
+             three=1))
+
+    assert conf._client is client
+
+    assert conf.one._client is client
+    assert conf.one.foo._client is client
+    assert all(item._client is client for item in conf.one.bar)
+
+    assert all(item._client is client for item in conf.two)
+    assert all(item.foo._client is client for item in conf.two)
+    assert all(all(subitem._client is client for subitem in item.bar)
+               for item in conf.two)

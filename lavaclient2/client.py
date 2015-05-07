@@ -16,6 +16,7 @@ import re
 from keystoneclient import exceptions as ks_error
 import uuid
 import requests
+from threading import Lock
 
 from lavaclient2._version import __version__
 from lavaclient2 import keystone
@@ -114,6 +115,8 @@ class Lava(object):
         self.scripts = scripts.Resource(self, command_line=_enable_cli)
         self.nodes = nodes.Resource(self, command_line=_enable_cli)
 
+        self._auth_lock = Lock()
+
     def _validate_endpoint(self, endpoint, tenant_id):
         """Validate that the endpoint ends with v2/<tenant_id>"""
 
@@ -174,18 +177,19 @@ class Lava(object):
             raise error.AuthenticationError(
                 'Can not reauthenticate with hard-coded token')
 
-        LOG.info('Reauthenticating via keystone')
+        with self._auth_lock:
+            LOG.info('Reauthenticating via keystone')
 
-        old_token = self.token
-        self._auth = self.authenticate(self._auth_url,
-                                       self._api_key,
-                                       self._region,
-                                       self._username,
-                                       self._password,
-                                       self._tenant_id)
+            old_token = self.token
+            self._auth = self.authenticate(self._auth_url,
+                                           self._api_key,
+                                           self._region,
+                                           self._username,
+                                           self._password,
+                                           self._tenant_id)
 
-        if self.token == old_token:
-            LOG.warn('Reauthentication produced the same token')
+            if self.token == old_token:
+                LOG.warn('Reauthentication produced the same token')
 
     @property
     def token(self):
