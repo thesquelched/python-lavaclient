@@ -571,16 +571,21 @@ def test_socks_connection(url, proxy_host, proxy_port):
 
 def create_socks_proxy(host, port, ssh_options=None, test_url=None):
     """Create a SOCKS proxy via SSH"""
-    if isinstance(ssh_options, six.text_type):
+    if isinstance(ssh_options, six.string_types):
         ssh_options = shlex.split(ssh_options)
     elif ssh_options is None:
         ssh_options = []
 
-    process = subprocess.Popen(
-        ['ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes',
-            '-N', '-D', str(port)] + list(map(str, ssh_options)) + [host],
-        stderr=subprocess.STDOUT,
-        stdout=subprocess.PIPE)
+    command = [
+        'ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes', '-N',
+        '-D', str(port)]
+    command.extend(six.text_type(item) for item in ssh_options)
+    command.append(host)
+
+    LOG.debug('SSH proxy command: %s', ' '.join(command))
+    process = subprocess.Popen(command,
+                               stderr=subprocess.STDOUT,
+                               stdout=subprocess.PIPE)
 
     if not test_url:
         if process.poll():
