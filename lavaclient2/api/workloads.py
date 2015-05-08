@@ -17,7 +17,8 @@ from figgis import Config, Field, ListField
 
 from lavaclient2.api import resource
 from lavaclient2.util import (display, display_table, CommandLine, command,
-                              argument, print_table, prettify)
+                              argument, print_table)
+from lavaclient2.api.response import Workload, Recommendations
 from lavaclient2.log import NullHandler
 from itertools import repeat, chain
 
@@ -50,52 +51,11 @@ are the possible values:
 # API Responses
 ######################################################################
 
-class Workload(Config):
-
-    table_columns = ('id', 'name', 'caption', '_description')
-    table_header = ('ID', 'Name', 'Caption', 'Description')
-
-    id = Field(six.text_type, required=True)
-    name = Field(six.text_type, required=True)
-    caption = Field(six.text_type, required=True)
-    description = Field(six.text_type, required=True)
-
-    @property
-    def _description(self):
-        return '\n'.join(textwrap.wrap(self.description, 30))
-
-
 class WorkloadsResponse(Config):
 
     """Response from /workloads"""
 
     workloads = ListField(Workload, required=True)
-
-
-class Size(Config):
-
-    table_columns = ('flavor', 'minutes', 'nodecount', 'recommended')
-    table_header = ('Flavor', 'Minutes', 'Nodes', 'Recommended')
-
-    flavor = Field(six.text_type, required=True)
-    minutes = Field(float, required=True)
-    nodecount = Field(int, required=True)
-    recommended = Field(bool, default=False)
-
-
-@prettify('requires')
-class Recommendations(Config):
-
-    """Recommendations on how to use the Lava API for a given workload"""
-
-    name = Field(six.text_type, required=True)
-    description = Field(six.text_type, required=True)
-    requires = ListField(six.text_type, required=True)
-    sizes = ListField(Size, required=True)
-
-    @property
-    def _description(self):
-        return '\n'.join(textwrap.wrap(self.description, 30))
 
 
 class RecommendationsResponse(Config):

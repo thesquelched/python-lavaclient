@@ -114,6 +114,37 @@ class BaseCluster(object):
     def nodes(self):
         return self._client.clusters.nodes(self.id)
 
+    def refresh(self):
+        """
+        Refresh the cluster. If this object was returned from
+        :meth:`Lava.clusters.list`, it will return the same amount of detail
+        as :meth:`Lava.clusters.get`.
+
+        :returns: :class:`ClusterDetail`
+        """
+        return self._client.clusters.get(self.id)
+
+    def delete(self):
+        """
+        Delete this cluster.
+        """
+        return self._client.clusters.delete(self.id)
+
+    def wait(self, **kwargs):
+        """
+        Wait for this cluster to become active
+
+        :returns: :class:`ClusterDetail`
+        """
+        return self._client.clusters.wait(self.id, **kwargs)
+
+    def ssh_proxy(self, **kwargs):
+        """
+        Start a SOCKS5 proxy over SSH to this cluster. See
+        :meth:`Lava.clusters.wait`.
+        """
+        return self._client.clusters.ssh_proxy(self.id, **kwargs)
+
 
 class Cluster(Config, IdReprMixin, BaseCluster):
 
@@ -225,8 +256,27 @@ class StackService(Config):
     modes = ListField(six.text_type, required=True)
 
 
+class BaseStack(object):
+
+    def refresh(self):
+        """
+        Refresh this stack. If this object was returned from
+        :meth:`Lava.stacks.list`, it will return the same amount of detail as
+        :meth:`Lava.stacks.get`.
+
+        :returns: :class:`StackDetail`
+        """
+        return self._client.stacks.get(self.id)
+
+    def delete(self):
+        """
+        Delete this stack.
+        """
+        return self._client.stacks.delete(self.id)
+
+
 @prettify('services')
-class Stack(Config, IdReprMixin):
+class Stack(Config, IdReprMixin, BaseStack):
 
     table_columns = ('id', 'name', 'distro', '_services')
     table_header = ('ID', 'Name', 'Distro', 'Services')
@@ -239,7 +289,7 @@ class Stack(Config, IdReprMixin):
 
 
 @prettify('node_groups')
-class StackDetail(Stack):
+class StackDetail(Stack, IdReprMixin, BaseStack):
 
     __inherits__ = [Stack]
 
@@ -299,3 +349,63 @@ class Script(Config, IdReprMixin):
     created = Field(DateTime, required=True)
     updated = Field(DateTime, required=True)
     links = ListField(Link, required=True)
+
+    def update(self, **kwargs):
+        """
+        Update this script. See :meth:`Lava.scripts.update`.
+        """
+        return self._client.scripts.update(self.id, **kwargs)
+
+    def delete(self):
+        """
+        Delete this script.
+        """
+        return self._client.scripts.delete(self.id)
+
+
+class Workload(Config):
+
+    table_columns = ('id', 'name', 'caption', '_description')
+    table_header = ('ID', 'Name', 'Caption', 'Description')
+
+    id = Field(six.text_type, required=True)
+    name = Field(six.text_type, required=True)
+    caption = Field(six.text_type, required=True)
+    description = Field(six.text_type, required=True)
+
+    @property
+    def _description(self):
+        return '\n'.join(textwrap.wrap(self.description, 30))
+
+    def recommendations(self, *args):
+        """
+        Get recommendations for this workload. See
+        :meth:`Lava.workloads.recommendations`.
+        """
+        return self._client.workloads.recommendations(self.id, *args)
+
+
+class Size(Config):
+
+    table_columns = ('flavor', 'minutes', 'nodecount', 'recommended')
+    table_header = ('Flavor', 'Minutes', 'Nodes', 'Recommended')
+
+    flavor = Field(six.text_type, required=True)
+    minutes = Field(float, required=True)
+    nodecount = Field(int, required=True)
+    recommended = Field(bool, default=False)
+
+
+@prettify('requires')
+class Recommendations(Config):
+
+    """Recommendations on how to use the Lava API for a given workload"""
+
+    name = Field(six.text_type, required=True)
+    description = Field(six.text_type, required=True)
+    requires = ListField(six.text_type, required=True)
+    sizes = ListField(Size, required=True)
+
+    @property
+    def _description(self):
+        return '\n'.join(textwrap.wrap(self.description, 30))
