@@ -153,7 +153,7 @@ def test_ssh_proxy(popen, mock_client, cluster_response, nodes_response):
 
     popen.assert_called_with(
         ['ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes',
-         '-N', '-D', '54321', '1.2.3.4'],
+         '-N', '-D', '54321', 'username@1.2.3.4'],
         stderr=subprocess.STDOUT,
         stdout=subprocess.PIPE)
 
@@ -185,7 +185,7 @@ def test_ssh_proxy_errors(test_connection, popen, failure, mock_client,
 
     popen.assert_called_with(
         ['ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes',
-         '-N', '-D', '54321', '1.2.3.4'],
+         '-N', '-D', '54321', 'username@1.2.3.4'],
         stderr=subprocess.STDOUT,
         stdout=subprocess.PIPE)
 

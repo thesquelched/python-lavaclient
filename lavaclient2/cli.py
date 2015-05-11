@@ -140,8 +140,8 @@ def execute_command(client, args):
         COMMAND_DISPATCH[resource](client, args)
         sys.exit(0)
 
-    command = args.command
-    action = getattr(getattr(client, resource), command)
+    method = args.method
+    action = getattr(getattr(client, resource), method)
 
     call_action(action, args)
 
@@ -205,7 +205,7 @@ def parse_argv():
     for command, func in COMMAND_DISPATCH.items():
         (subparsers.add_parser(command, parents=[parser_base],
                                description=func.__doc__)
-                   .set_defaults(resource=command, command=command))
+                   .set_defaults(resource=command, method=command))
 
     for module in (clusters, limits, flavors, stacks, distros, workloads,
                    scripts, nodes):

@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
+import subprocess
 import textwrap
 import six
 from figgis import Config, Field, ListField
@@ -17,7 +19,13 @@ from dateutil.parser import parse as dateparse
 from datetime import datetime
 
 from lavaclient2.validators import Length, Range
-from lavaclient2.util import display_result, prettify, _prettify
+from lavaclient2.util import display_result, prettify, _prettify, ssh_to_host
+from lavaclient2.log import NullHandler
+from lavaclient2 import error
+
+
+LOG = logging.getLogger(__name__)
+LOG.addHandler(NullHandler())
 
 
 def DateTime(value):
@@ -87,6 +95,34 @@ class Node(Config, IdReprMixin):
         except IndexError:
             return None
 
+    def _ssh(self, username, command=None, ssh_command=None):
+        """
+        SSH to this node, optionally running a command and returning the
+        output.
+
+        :param username: Login user
+        :param command: Command to execute remotely
+        :returns: Output from running command, if a command was specified
+        """
+        try:
+            return ssh_to_host(username, self.public_ip, command=command,
+                               ssh_command=ssh_command)
+        except subprocess.CalledProcessError as exc:
+            msg = 'Command failed with code %d', exc.returncode
+            LOG.error(msg)
+            LOG.debug('Command output:\n%s', exc.output)
+            raise error.FailedError(msg)
+
+    def execute(self, username, command, ssh_command=None):
+        """
+        Execute a command remotely on this node, returning the output.
+
+        :param username: Login user
+        :param command: Command to execute remotely
+        :returns: Output from running command
+        """
+        return self._ssh(username, command=command, ssh_command=ssh_command)
+
 
 @prettify('components')
 class NodeGroup(Config, IdReprMixin):
@@ -144,6 +180,14 @@ class BaseCluster(object):
         :meth:`Lava.clusters.wait`.
         """
         return self._client.clusters.ssh_proxy(self.id, **kwargs)
+
+    def execute_on_node(self, node_name, command, **kwargs):
+        """
+        Execute a command on a cluster node. See:
+        :meth:`Lava.clusters.ssh_execute`.
+        """
+        return self._client.clusters.ssh_execute(self.id, node_name, command,
+                                                 **kwargs)
 
 
 class Cluster(Config, IdReprMixin, BaseCluster):

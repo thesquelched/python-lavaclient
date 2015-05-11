@@ -461,10 +461,10 @@ class CommandLine(type):
             for cmd, args in arguments.items():
                 parser_opts = parser_options.get(cmd, {})
                 subparser = subparsers.add_parser(
-                    cmd, parents=[parser_base],
+                    cmd.strip('_'), parents=[parser_base],
                     formatter_class=argparse.RawDescriptionHelpFormatter,
                     **parser_opts)
-                subparser.set_defaults(command=cmd)
+                subparser.set_defaults(method=cmd)
                 group = subparser.add_argument_group('Command Arguments')
                 for arg in args:
                     arg.add_to_parser(group)
@@ -569,23 +569,23 @@ def test_socks_connection(url, proxy_host, proxy_port):
         resp.close()
 
 
-def create_socks_proxy(host, port, ssh_options=None, test_url=None):
+def create_socks_proxy(username, host, port, ssh_command=None, test_url=None):
     """Create a SOCKS proxy via SSH"""
-    if isinstance(ssh_options, six.string_types):
-        ssh_options = shlex.split(ssh_options)
-    elif ssh_options is None:
-        ssh_options = []
+    if isinstance(ssh_command, six.string_types):
+        ssh_command = shlex.split(ssh_command)
+    elif ssh_command is None:
+        ssh_command = ['ssh']
 
-    command = [
-        'ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes', '-N',
+    options = [
+        '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes', '-N',
         '-D', str(port)]
-    command.extend(six.text_type(item) for item in ssh_options)
-    command.append(host)
+    command = ssh_command + options + ['{0}@{1}'.format(username, host)]
 
     LOG.debug('SSH proxy command: %s', ' '.join(command))
-    process = subprocess.Popen(command,
-                               stderr=subprocess.STDOUT,
-                               stdout=subprocess.PIPE)
+    process = subprocess.Popen(
+        [os.path.expandvars(os.path.expanduser(item)) for item in command],
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE)
 
     if not test_url:
         if process.poll():
@@ -633,3 +633,28 @@ def inject_client(client, obj):
             inject_client(client, item)
 
     return obj
+
+
+def ssh_to_host(username, host, ssh_command=None, command=None):
+    """SSH to a host"""
+    if isinstance(ssh_command, six.string_types):
+        ssh_cmd = shlex.split(ssh_command)
+    elif isinstance(ssh_command, (list, tuple)):
+        ssh_cmd = list(ssh_command)
+    elif ssh_command is None:
+        ssh_cmd = ['ssh']
+    else:
+        ssh_cmd = ssh_command
+
+    command_list = ssh_cmd + ['{0}@{1}'.format(username, host)]
+    if command:
+        command_list.append(six.text_type(command))
+        call_func = subprocess.check_output
+    else:
+        call_func = subprocess.call
+
+    LOG.debug('SSH command: %s', ' '.join(command_list))
+    return call_func(
+        [os.path.expandvars(os.path.expanduser(item))
+         for item in command_list],
+        stderr=subprocess.STDOUT)

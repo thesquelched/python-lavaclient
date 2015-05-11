@@ -39,6 +39,7 @@ MIN_INTERVAL = 10
 IN_PROGRESS_STATES = frozenset([
     'BUILDING', 'BUILD', 'CONFIGURING', 'CONFIGURED', 'UPDATING', 'REBOOTING',
     'RESIZING', 'WAITING'])
+FINAL_STATES = frozenset(['ACTIVE', 'ERROR'])
 
 
 def natural_number(value):
@@ -336,7 +337,10 @@ class Resource(resource.Resource):
         """
         return self._client.nodes.list(cluster_id)
 
-    def _get_named_node(self, node_name, nodes):
+    def _get_named_node(self, nodes, node_name=None):
+        if node_name is None:
+            return nodes[0]
+
         try:
             ssh_node = six.next(node for node in nodes
                                 if node.name.lower() == node_name.lower())
@@ -352,6 +356,28 @@ class Resource(resource.Resource):
 
         return ssh_node
 
+    def _cluster_nodes(self, cluster_id, wait=False):
+        """
+        Return `(cluster, nodes)`, where `nodes` is a list of all nodes in the
+        cluster. If the cluster is not ACTIVE/ERROR and wait is `True`, the
+        function will block until it becomes active; otherwise, an exception
+        is thrown.
+        """
+        cluster = self.get(cluster_id)
+        status = cluster.status.upper()
+        if status not in FINAL_STATES:
+            LOG.debug('Cluster status: %s', status)
+
+            if status not in IN_PROGRESS_STATES:
+                raise error.InvalidError(
+                    'Cluster is in state {0}'.format(status))
+            elif not wait:
+                raise error.InvalidError('Cluster is not yet active')
+
+            self.wait(cluster_id)
+
+        return cluster, self.nodes(cluster_id)
+
     @command(
         parser_options=dict(
             description='Create a SOCKS5 proxy over SSH to a node in the '
@@ -362,14 +388,13 @@ class Resource(resource.Resource):
         node_name=argument(help='Name of node on which to make the SSH '
                                 'connection, e.g. gateway-1. By default, use '
                                 'first available node.'),
-        ssh_options=argument(help='Additonal options to pass to the ssh '
-                                  'command'),
+        ssh_command=argument(help="SSH command (default: 'ssh')"),
         wait=argument(action='store_true',
                       help="Wait for cluster to become active (if it isn't "
                            "already)"),
     )
     def ssh_proxy(self, cluster_id, port=None, node_name=None,
-                  ssh_options=None, wait=False):
+                  ssh_command=None, wait=False):
         """
         Set up a SOCKS5 proxy over SSH to a node in the cluster. Returns the
         SSH process (via :class:`Popen`), which can be stopped via the
@@ -386,24 +411,8 @@ class Resource(resource.Resource):
         if port is None:
             port = 12345
 
-        cluster = self.get(cluster_id)
-        status = cluster.status.upper()
-        if status != 'ACTIVE':
-            LOG.debug('Cluster status: %s', status)
-
-            if status not in IN_PROGRESS_STATES:
-                raise error.InvalidError(
-                    'Cluster is in state {0}'.format(status))
-            elif not wait:
-                raise error.InvalidError('Cluster is not yet active')
-
-            self.wait(cluster_id)
-
-        nodes = self.nodes(cluster_id)
-        if node_name:
-            ssh_node = self._get_named_node(node_name, nodes)
-        else:
-            ssh_node = nodes[0]
+        cluster, nodes = self._cluster_nodes(cluster_id, wait=wait)
+        ssh_node = self._get_named_node(nodes, node_name=node_name)
 
         # Get a URL to test the proxy against
         all_urls = itertools.chain.from_iterable(
@@ -416,8 +425,8 @@ class Resource(resource.Resource):
         printer('Starting SOCKS proxy via node {0} ({1})'.format(
             ssh_node.name, ssh_node.public_ip))
 
-        process = create_socks_proxy(ssh_node.public_ip, port,
-                                     ssh_options=ssh_options,
+        process = create_socks_proxy(cluster.username, ssh_node.public_ip,
+                                     port, ssh_command=ssh_command,
                                      test_url=test_url)
 
         printer('Successfully created SOCKS proxy on localhost:{0}'.format(
@@ -431,3 +440,48 @@ class Resource(resource.Resource):
             process.communicate()
         except KeyboardInterrupt:
             printer('SOCKS proxy closed')
+
+    @command(
+        parser_options=dict(
+            description='SSH to a node in the cluster and optionally execute '
+                        'a command'
+        ),
+        node_name=argument(help='Name of node on which to make the SSH '
+                                'connection, e.g. gateway-1. By default, use '
+                                'first available node.'),
+        ssh_command=argument(help="SSH command (default: 'ssh')"),
+        wait=argument(action='store_true',
+                      help="Wait for cluster to become active (if it isn't "
+                           "already)"),
+        command=argument(help='Command to execute over SSH')
+    )
+    def _ssh(self, cluster_id, node_name=None, ssh_command=None, wait=False,
+             command=None):
+        """
+        Command-line only. SSH to the desired cluster node.
+        """
+        cluster, nodes = self._cluster_nodes(cluster_id, wait=wait)
+        node = self._get_named_node(nodes, node_name=node_name)
+
+        output = node._ssh(cluster.username, command=command,
+                           ssh_command=ssh_command)
+        if command:
+            six.print_(output)
+
+    def ssh_execute(self, cluster_id, node_name, command, ssh_command=None,
+                    wait=False):
+        """
+        Execute a command over SSH to the specified node in the cluster.
+
+        :param cluster_id: Cluster ID
+        :param node_name: Name of node on which to make the SSH connection. By
+                          default, use first available node.
+        :param command: Shell command to execute remotely
+        :param ssh_command: SSH shell command to execute locally
+                            (default: `'ssh'`)
+        :param wait: If `True`, wait for the cluster to become active before
+                     creating the proxy
+        :returns: The output of running the command
+        """
+        return self._ssh(cluster_id, node_name=node_name,
+                         ssh_command=ssh_command, command=command, wait=wait)
