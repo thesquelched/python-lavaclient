@@ -35,13 +35,16 @@ def create_client(args):
     Create instance of Lava from CLI args
     """
     apikey = first_exists(args.api_key,
+                          os.environ.get('LAVA_API_KEY'),
                           os.environ.get('OS_API_KEY'))
     token = first_exists(args.token,
                          os.environ.get('AUTH_TOKEN'))
     user = first_exists(args.user,
+                        os.environ.get('LAVA_USERNAME'),
                         os.environ.get('OS_USERNAME'),
                         getpass.getuser())
     password = first_exists(args.password,
+                            os.environ.get('LAVA_PASSWORD'),
                             os.environ.get('OS_PASSWORD'))
 
     if not any((apikey, token, password)):
@@ -59,10 +62,13 @@ def create_client(args):
             token=token,
             password=password,
             tenant_id=first_exists(args.tenant,
+                                   os.environ.get('LAVA_TENANT_NAME'),
                                    os.environ.get('OS_TENANT_NAME')),
             region=first_exists(args.region,
+                                os.environ.get('LAVA_REGION_NAME'),
                                 os.environ.get('OS_REGION_NAME')),
             auth_url=first_exists(args.auth_url,
+                                  os.environ.get('LAVA_AUTH_URL'),
                                   os.environ.get('OS_AUTH_URL')),
             endpoint=first_exists(args.endpoint,
                                   os.environ.get('LAVA2_API_URL')),
