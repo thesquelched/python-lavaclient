@@ -68,6 +68,20 @@ def test_create(args, node_groups, print_table, print_single_table,
         assert kwargs['json']['cluster'].get('node_groups') == node_groups
 
 
+def test_create_with_scripts(print_table, print_single_table, mock_client,
+                             cluster_response):
+    mock_client._request.return_value = cluster_response
+
+    with patch('sys.argv', ['lava2', 'clusters', 'create', 'name',
+                            'username', 'keypair_name', 'stack_id',
+                            '--user-script', 'id1', '--user-script', 'id2']):
+        main()
+        kwargs = mock_client._request.call_args[1]
+        print kwargs
+        assert kwargs['json']['cluster'].get('scripts') == [{'id': 'id1'},
+                                                            {'id': 'id2'}]
+
+
 @patch('sys.argv', ['lava2', 'clusters', 'delete', 'cluster_id'])
 def test_delete(mock_client):
     main()

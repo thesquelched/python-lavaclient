@@ -72,6 +72,11 @@ class ClusterResponse(Config):
 # API Request Data
 ######################################################################
 
+class ClusterCreateScript(Config):
+
+    id = Field(six.text_type, required=True)
+
+
 class ClusterCreateNodeGroups(Config):
 
     id = Field(six.text_type, required=True,
@@ -92,6 +97,7 @@ class ClusterCreateRequest(Config):
                          validator=validators.Length(min=1, max=255))
     stack_id = Field(six.text_type, required=True)
     node_groups = ListField(ClusterCreateNodeGroups)
+    scripts = ListField(ClusterCreateScript)
 
 
 ######################################################################
@@ -119,7 +125,6 @@ def parse_node_group(value):
 
     data = {'id': node_group}
     data.update(keywords)
-
     # Make sure that node group is valid
     ClusterCreateNodeGroups(data)
 
@@ -186,6 +191,11 @@ class Resource(resource.Resource):
         stack_id=argument(
             help='Valid Lava stack ID. For a list of stacks, use the '
                  '`lava2 stacks list` command'),
+        user_scripts=argument(
+            '--user-script', action='append',
+            help='User script ID: See `lava2 scripts --help` for more '
+                 'information; may be used multiple times to provide multiple '
+                 'script IDs'),
         node_groups=argument(
             type=parse_node_group, action='append',
             help='Node group options; may be used multiple times to '
@@ -201,7 +211,7 @@ class Resource(resource.Resource):
     )
     @display_table(ClusterDetail)
     def create(self, name, username, keypair_name, stack_id,
-               node_groups=None, wait=False):
+               user_scripts=None, node_groups=None, wait=False):
         """
         Create a cluster
 
@@ -210,6 +220,8 @@ class Resource(resource.Resource):
         :param keypair_name: SSH keypair name
         :param stack_id: Valid stack identifier
         :param node_groups: List of node groups for the cluster
+        :param user_scripts: List of user script ID's;
+                             See :meth:`Lava.scripts.create`
         :param wait: If `True`, wait for the cluster to become active before
                      returning
         :returns: Same as :func:`get`
@@ -222,6 +234,9 @@ class Resource(resource.Resource):
         )
         if node_groups:
             data.update(node_groups=node_groups)
+
+        if user_scripts:
+            data.update(scripts=[{'id': script} for script in user_scripts])
 
         request_data = self._marshal_request(
             data, ClusterCreateRequest, wrapper='cluster')
