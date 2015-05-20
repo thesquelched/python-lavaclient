@@ -82,6 +82,24 @@ def test_create_with_scripts(print_table, print_single_table, mock_client,
                                                             {'id': 'id2'}]
 
 
+@pytest.mark.parametrize('args,node_groups', [
+    (['--node-group', 'id(count=10)'], [{'id': 'id', 'count': 10}]),
+    (['--node-group', 'id1(count=10)', '--node-group', 'id2(count=3)'],
+     [{'id': 'id1', 'count': 10}, {'id': 'id2', 'count': 3}]),
+])
+def test_resize(args, node_groups, print_table, print_single_table,
+                mock_client, cluster_response):
+    mock_client._request.return_value = cluster_response
+
+    base_args = ['lava2', 'clusters', 'resize', 'cluster_id']
+
+    with patch('sys.argv', base_args + args):
+        main()
+
+        kwargs = mock_client._request.call_args[1]
+        assert kwargs['json']['cluster'].get('node_groups') == node_groups
+
+
 @patch('sys.argv', ['lava2', 'clusters', 'delete', 'cluster_id'])
 def test_delete(mock_client):
     main()

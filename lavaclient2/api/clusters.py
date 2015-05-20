@@ -100,6 +100,23 @@ class ClusterCreateRequest(Config):
     scripts = ListField(ClusterCreateScript)
 
 
+class ClusterResizeRequest(Config):
+
+    """PUT data to resize cluster"""
+
+    node_groups = ListField(ClusterCreateNodeGroups)
+
+
+class ClusterUpdateRequest(Config):
+
+    """Update a cluster resource"""
+
+    action = Field(six.text_type, required=True,
+                   validator=validators.Length(min=1, max=255),
+                   choices=['resize'])
+    cluster = Field(ClusterResizeRequest)
+
+
 ######################################################################
 # API Resource
 ######################################################################
@@ -200,9 +217,9 @@ class Resource(resource.Resource):
             type=parse_node_group, action='append',
             help='Node group options; may be used multiple times to '
                  'configure multiple node groups. Each option should be in '
-                 'the form <id>(<key>=<value>, ...), where <id> is a valid '
-                 'node group ID for the stack and the key-value pairs are '
-                 'options to specify for that node group. Current valid '
+                 'the form \'<id>(<key>=<value>, ...)\', where <id> is a '
+                 'valid node group ID for the stack and the key-value pairs '
+                 'are options to specify for that node group. Current valid '
                  'options are `count` and `flavor_id`'),
         wait=argument(
             action='store_true',
@@ -243,6 +260,60 @@ class Resource(resource.Resource):
 
         cluster = self._parse_response(
             self._client._post('clusters', json=request_data),
+            ClusterResponse,
+            wrapper='cluster')
+
+        if wait:
+            return self.wait(cluster.id)
+
+        return cluster
+
+    @command(
+        parser_options=dict(
+            description='Resize an existing Lava cluster',
+        ),
+        node_groups=argument(
+            type=parse_node_group, action='append',
+            help='Node group options; may be used multiple times to resize '
+                 'multiple node groups. Each option should be in the form '
+                 '\'<id>(count=<value>)\', where <id> is a valid node '
+                 'group ID for the cluster and the count is the '
+                 'option to specify new count for that node group. '),
+        wait=argument(
+            action='store_true',
+            help='Wait for the cluster to become active'
+        ),
+    )
+    @display_table(ClusterDetail)
+    def resize(self, cluster_id, node_groups=None, wait=False):
+        """
+        Resize a cluster
+
+        :param cluster_id: ID of cluster to resize
+        :param node_groups: List of node groups for the cluster
+        :returns: Same as :func:`get`
+        """
+        if not node_groups:
+            raise error.RequestError("Must specify atleast one node_group "
+                                     "to resize")
+
+        if not all(sorted(node_group.keys()) == sorted(['count', 'id'])
+                   for node_group in node_groups):
+            raise error.RequestError("Invalid or missing option "
+                                     "in the node groups")
+
+        data = dict(
+            action="resize",
+            cluster=dict(
+                node_groups=node_groups
+            )
+        )
+
+        request_data = self._marshal_request(data, ClusterUpdateRequest)
+
+        cluster = self._parse_response(
+            self._client._put('clusters/{0}'.format(cluster_id),
+                              json=request_data),
             ClusterResponse,
             wrapper='cluster')
 

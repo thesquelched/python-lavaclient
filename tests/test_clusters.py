@@ -87,6 +87,27 @@ def test_api_create(lavaclient, cluster_detail_fixture):
                   node_groups=[{'id': 'x' * 256}])
 
 
+def test_api_resize(lavaclient, cluster_detail_fixture):
+    with patch.object(lavaclient, '_request') as request:
+
+        request.return_value = {'cluster': cluster_detail_fixture}
+        resp = lavaclient.clusters.resize(
+            'cluster_id',
+            node_groups=[{
+                'id': 'node_id',
+                'count': 10,
+            }])
+
+        assert isinstance(resp, response.ClusterDetail)
+
+    pytest.raises(error.RequestError, lavaclient.clusters.resize,
+                  'cluster_id')
+    pytest.raises(error.RequestError, lavaclient.clusters.resize,
+                  'cluster_id', node_groups=[])
+    pytest.raises(error.RequestError, lavaclient.clusters.resize,
+                  'cluster_id', node_groups=[{'id': 'node_id'}])
+
+
 def test_api_delete(lavaclient, cluster_fixture):
     with patch.object(lavaclient, '_request') as request:
         request.return_value = {'cluster': cluster_fixture}
