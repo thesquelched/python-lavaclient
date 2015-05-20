@@ -328,3 +328,43 @@ def node(link_response):
 @pytest.fixture
 def nodes_response(node):
     return {'nodes': [node]}
+
+
+@pytest.fixture
+def ssh_key():
+    return {'key_name': 'mykey', 'public_key': 'a' * 50}
+
+
+@pytest.fixture
+def cloud_files():
+    return {'username': 'username', 'api_key': 'a' * 25}
+
+
+@pytest.fixture
+def ssh_key_response(ssh_key):
+    return {'credentials': {'ssh_keys': ssh_key}}
+
+
+@pytest.fixture
+def ssh_keys_response(ssh_key):
+    return {'credentials': {'ssh_keys': [ssh_key]}}
+
+
+@pytest.fixture
+def cloud_files_cred_response(cloud_files):
+    return {'credentials': {'cloud_files': cloud_files}}
+
+
+@pytest.fixture
+def cloud_files_creds_response(cloud_files):
+    return {'credentials': {'cloud_files': [cloud_files]}}
+
+
+@pytest.fixture
+def credentials_response(ssh_key, cloud_files):
+    return {
+        'credentials': {
+            'ssh_keys': [ssh_key],
+            'cloud_files': [cloud_files],
+        }
+    }

@@ -25,7 +25,7 @@ from lavaclient2 import constants
 from lavaclient2 import error
 from lavaclient2.log import NullHandler
 from lavaclient2.api import (clusters, limits, flavors, stacks, distros,
-                             workloads, scripts, nodes)
+                             workloads, scripts, nodes, credentials)
 
 
 LOG = logging.getLogger(__name__)
@@ -114,6 +114,8 @@ class Lava(object):
         self.workloads = workloads.Resource(self, command_line=_enable_cli)
         self.scripts = scripts.Resource(self, command_line=_enable_cli)
         self.nodes = nodes.Resource(self, command_line=_enable_cli)
+        self.credentials = credentials.Resource(self,
+                                                command_line=_enable_cli)
 
         self._auth_lock = Lock()
 

@@ -7,6 +7,8 @@ from copy import deepcopy
 
 from lavaclient2.cli import main
 from lavaclient2.api.response import Cluster, ClusterDetail, NodeGroup, Node
+from lavaclient2.api.clusters import DEFAULT_SSH_KEY
+from lavaclient2.error import RequestError
 
 
 @patch('sys.argv', ['lava2', 'clusters', 'list'])
@@ -55,12 +57,12 @@ def test_get(print_table, print_single_table, mock_client, cluster_response):
     (['--node-group', 'id(count=10, flavor_id=flavor)'],
      [{'id': 'id', 'flavor_id': 'flavor', 'count': 10}]),
 ])
-def test_create(args, node_groups, print_table, print_single_table,
-                mock_client, cluster_response):
+def test_create_node_groups(args, node_groups, print_table,
+                            print_single_table, mock_client,
+                            cluster_response):
     mock_client._request.return_value = cluster_response
 
-    base_args = ['lava2', 'clusters', 'create', 'name', 'username',
-                 'keypair_name', 'stack_id']
+    base_args = ['lava2', 'clusters', 'create', 'name', 'stack_id']
     with patch('sys.argv', base_args + args):
         main()
 
@@ -68,16 +70,56 @@ def test_create(args, node_groups, print_table, print_single_table,
         assert kwargs['json']['cluster'].get('node_groups') == node_groups
 
 
+@pytest.mark.parametrize('args,keys', [
+    ([], [DEFAULT_SSH_KEY]),
+    (['--ssh-key', 'key1'], ['key1']),
+    (['--ssh-key', 'key1', '--ssh-key', 'key2'], ['key1', 'key2']),
+])
+def test_create_ssh_keys(args, keys, mock_client, print_table,
+                         print_single_table, cluster_response):
+    mock_client._request.return_value = cluster_response
+
+    base_args = ['lava2', 'clusters', 'create', 'name', 'stack_id']
+    with patch('sys.argv', base_args + args):
+        main()
+
+        kwargs = mock_client._request.call_args[1]
+        assert kwargs['json']['cluster'].get('ssh_keys') == keys
+
+
+@pytest.mark.usefixtures('print_table', 'print_single_table')
+@patch('sys.argv', ['lava2', 'clusters', 'create', 'name', 'stack_id'])
+def test_create_no_ssh_key(mock_client, cluster_response, ssh_key_response):
+    mock_client._request.side_effect = [
+        RequestError('Cannot find requested ssh_keys: {0}'.format(
+            [DEFAULT_SSH_KEY])),
+        ssh_key_response,
+        cluster_response,
+    ]
+
+    main()
+    assert mock_client._request.call_count == 3
+
+
+@pytest.mark.usefixtures('print_table', 'print_single_table')
+@patch('sys.argv', ['lava2', 'clusters', 'create', 'name', 'stack_id',
+                    '--ssh-key', 'mykey'])
+def test_create_missing_ssh_key(mock_client, cluster_response):
+    mock_client._request.side_effect = RequestError(
+        'Cannot find requested ssh_keys: mykey')
+
+    pytest.raises(Exception, main)
+    assert mock_client._request.call_count == 1
+
+
 def test_create_with_scripts(print_table, print_single_table, mock_client,
                              cluster_response):
     mock_client._request.return_value = cluster_response
 
-    with patch('sys.argv', ['lava2', 'clusters', 'create', 'name',
-                            'username', 'keypair_name', 'stack_id',
+    with patch('sys.argv', ['lava2', 'clusters', 'create', 'name', 'stack_id',
                             '--user-script', 'id1', '--user-script', 'id2']):
         main()
         kwargs = mock_client._request.call_args[1]
-        print kwargs
         assert kwargs['json']['cluster'].get('scripts') == [{'id': 'id1'},
                                                             {'id': 'id2'}]
 

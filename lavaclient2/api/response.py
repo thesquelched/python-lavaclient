@@ -453,3 +453,36 @@ class Recommendations(Config):
     @property
     def _description(self):
         return '\n'.join(textwrap.wrap(self.description, 30))
+
+
+class CredentialType(Config):
+
+    type = Field(six.text_type, required=True)
+    schema = Field(dict, required=True)
+    links = ListField(Link, required=True)
+
+
+class SSHKey(Config):
+
+    table_columns = ('type', 'name')
+    table_header = ('Type', 'Name')
+
+    type = 'SSH Key'
+    name = Field(six.text_type, key='key_name', required=True)
+
+    def delete(self):
+        """Delete this key"""
+        self._client.credentials.delete_ssh_key(self.name)
+
+
+class CloudFilesCredential(Config):
+
+    table_columns = ('type', 'username')
+    table_header = ('Type', 'Username')
+
+    type = 'Cloud Files'
+    username = Field(six.text_type, required=True)
+
+    def delete(self):
+        """Delete this credential"""
+        self._client.credentials.delete_cloud_files(self.username)

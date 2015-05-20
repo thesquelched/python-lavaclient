@@ -57,20 +57,20 @@ def test_api_create(lavaclient, cluster_detail_fixture):
     with patch.object(lavaclient, '_request') as request:
         request.return_value = {'cluster': cluster_detail_fixture}
         resp = lavaclient.clusters.create(
-            'cluster_name', 'username', 'keypair_name', 'stack_id')
+            'cluster_name', 'stack_id')
         assert isinstance(resp, response.ClusterDetail)
 
     with patch.object(lavaclient, '_request') as request:
         request.return_value = {'cluster': cluster_detail_fixture}
         resp = lavaclient.clusters.create(
-            'cluster_name', 'username', 'keypair_name', 'stack_id',
+            'cluster_name', 'stack_id',
             node_groups=[])
         assert isinstance(resp, response.ClusterDetail)
 
     with patch.object(lavaclient, '_request') as request:
         request.return_value = {'cluster': cluster_detail_fixture}
         resp = lavaclient.clusters.create(
-            'cluster_name', 'username', 'keypair_name', 'stack_id',
+            'cluster_name', 'stack_id',
             node_groups=[{
                 'id': 'node_id',
                 'count': 10,
@@ -79,11 +79,9 @@ def test_api_create(lavaclient, cluster_detail_fixture):
         assert isinstance(resp, response.ClusterDetail)
 
     pytest.raises(error.InvalidError, lavaclient.clusters.create, 'x' * 256,
-                  'username', 'keypair_name', 'stack_id')
+                  'stack_id')
     pytest.raises(error.InvalidError, lavaclient.clusters.create, 'name',
-                  'username', 'x' * 256, 'stack_id')
-    pytest.raises(error.InvalidError, lavaclient.clusters.create, 'name',
-                  'username', 'keypair_name', 'stack_id',
+                  'stack_id',
                   node_groups=[{'id': 'x' * 256}])
 
 

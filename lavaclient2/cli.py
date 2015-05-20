@@ -23,7 +23,7 @@ from lavaclient2.error import LavaError
 from lavaclient2.util import get_function_arguments, first_exists
 from lavaclient2.log import NullHandler
 from lavaclient2.api import (clusters, limits, flavors, stacks, distros,
-                             workloads, scripts, nodes)
+                             workloads, scripts, nodes, credentials)
 
 
 LOG = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ def create_client(args):
     """
     Create instance of Lava from CLI args
     """
-    apikey = first_exists(args.api_key,
+    apikey = first_exists(args.lava_api_key,
                           os.environ.get('LAVA_API_KEY'),
                           os.environ.get('OS_API_KEY'))
     token = first_exists(args.token,
@@ -172,7 +172,7 @@ def parse_argv():
     general = parser_base.add_argument_group('General Options')
     general.add_argument('--token',
                          help='Lava API authentication token')
-    general.add_argument('--api-key',
+    general.add_argument('--api-key', dest='lava_api_key',
                          help='Lava API key')
     general.add_argument('--region',
                          help='API region, e.g. DFW')
@@ -206,7 +206,7 @@ def parse_argv():
                    .set_defaults(resource=command, method=command))
 
     for module in (clusters, limits, flavors, stacks, distros, workloads,
-                   scripts, nodes):
+                   scripts, nodes, credentials):
         name = module.__name__.split('.')[-1]
         subparser = subparsers.add_parser(name, parents=[parser_base])
         subparser.set_defaults(resource=name)

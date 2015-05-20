@@ -83,6 +83,11 @@ def retry(*args, **kwargs):
     return decorator(args[0]) if args and callable(args[0]) else decorator
 
 
+def expand(path):
+    """Fully expand OS path"""
+    return os.path.expanduser(os.path.expandvars(path))
+
+
 def strip_url(url):
     """Ensure that the API endpoint URL does not end with a slash"""
     return url.rstrip('/')
@@ -534,16 +539,19 @@ def first_exists(*args):
                 args[-1])
 
 
+def file_or_string(value):
+    """Either read file contents or return the string value"""
+    try:
+        with open(expand(value)) as handle:
+            return handle.read()
+    except IOError:
+        return value
+
+
 def read_json(value):
     """Either parse a raw JSON string or read JSON data from a file"""
-    try:
-        return json.loads(value)
-    except ValueError:
-        pass
-
-    fullpath = os.path.abspath(os.path.expanduser(os.path.expandvars(value)))
-    with open(fullpath) as handle:
-        return json.load(handle)
+    data = file_or_string(value)
+    return json.loads(data)
 
 
 def coroutine(func):
@@ -583,7 +591,7 @@ def create_socks_proxy(username, host, port, ssh_command=None, test_url=None):
 
     LOG.debug('SSH proxy command: %s', ' '.join(command))
     process = subprocess.Popen(
-        [os.path.expandvars(os.path.expanduser(item)) for item in command],
+        [expand(item) for item in command],
         stderr=subprocess.STDOUT,
         stdout=subprocess.PIPE)
 
@@ -655,6 +663,5 @@ def ssh_to_host(username, host, ssh_command=None, command=None):
 
     LOG.debug('SSH command: %s', ' '.join(command_list))
     return call_func(
-        [os.path.expandvars(os.path.expanduser(item))
-         for item in command_list],
+        [expand(item) for item in command_list],
         stderr=subprocess.STDOUT)

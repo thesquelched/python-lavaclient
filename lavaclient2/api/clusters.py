@@ -17,14 +17,17 @@ import six
 import logging
 import time
 import sys
+import socket
+from getpass import getuser
 from datetime import datetime, timedelta
-from figgis import Config, ListField, Field
+from figgis import Config, ListField, Field, PropertyError, ValidationError
 
 from lavaclient2.api import resource
 from lavaclient2.api.response import Cluster, ClusterDetail, Node
-from lavaclient2 import validators, error
+from lavaclient2 import error
+from lavaclient2.validators import Length, Range, List
 from lavaclient2.util import (CommandLine, argument, command, display_table,
-                              coroutine, create_socks_proxy)
+                              coroutine, create_socks_proxy, expand)
 from lavaclient2.log import NullHandler
 
 
@@ -35,11 +38,13 @@ LOG.addHandler(NullHandler())
 WAIT_INTERVAL = 30
 MIN_INTERVAL = 10
 
-
 IN_PROGRESS_STATES = frozenset([
     'BUILDING', 'BUILD', 'CONFIGURING', 'CONFIGURED', 'UPDATING', 'REBOOTING',
     'RESIZING', 'WAITING'])
 FINAL_STATES = frozenset(['ACTIVE', 'ERROR'])
+INVALID_USERNAMES = frozenset(['root'])
+
+DEFAULT_SSH_KEY = '{0}@{1}'.format(getuser(), socket.gethostname())
 
 
 def natural_number(value):
@@ -79,10 +84,31 @@ class ClusterCreateScript(Config):
 
 class ClusterCreateNodeGroups(Config):
 
+    __allow_extra__ = False
+
     id = Field(six.text_type, required=True,
-               validator=validators.Length(min=1, max=255))
-    count = Field(int, validator=validators.Range(min=1, max=100))
+               validator=Length(min=1, max=255))
+    count = Field(int, validator=Range(min=1, max=100))
     flavor_id = Field(six.text_type)
+
+
+class ClusterCreateCredential(Config):
+
+    name = Field(six.text_type, required=True,
+                 validator=Length(min=3, max=255))
+
+
+class ClusterCreateConnector(Config):
+
+    type = Field(six.text_type, required=True)
+    credential = Field(ClusterCreateCredential, required=True)
+
+
+def valid_username(value):
+    if value.lower() in INVALID_USERNAMES:
+        raise ValidationError('Invalid username: {0}'.format(value))
+
+    return True
 
 
 class ClusterCreateRequest(Config):
@@ -90,14 +116,15 @@ class ClusterCreateRequest(Config):
     """POST data to create cluster"""
 
     name = Field(six.text_type, required=True,
-                 validator=validators.Length(min=1, max=255))
+                 validator=Length(min=1, max=255))
     username = Field(six.text_type, required=True,
-                     validator=validators.Length(min=2, max=255))
-    keypair_name = Field(six.text_type, required=True,
-                         validator=validators.Length(min=1, max=255))
+                     validator=[Length(min=2, max=255), valid_username])
+    ssh_keys = ListField(six.text_type, required=True,
+                         validator=List(Length(min=1, max=255)))
     stack_id = Field(six.text_type, required=True)
     node_groups = ListField(ClusterCreateNodeGroups)
     scripts = ListField(ClusterCreateScript)
+    connectors = ListField(ClusterCreateConnector)
 
 
 class ClusterResizeRequest(Config):
@@ -112,7 +139,7 @@ class ClusterUpdateRequest(Config):
     """Update a cluster resource"""
 
     action = Field(six.text_type, required=True,
-                   validator=validators.Length(min=1, max=255),
+                   validator=Length(min=1, max=255),
                    choices=['resize'])
     cluster = Field(ClusterResizeRequest)
 
@@ -142,14 +169,28 @@ def parse_node_group(value):
 
     data = {'id': node_group}
     data.update(keywords)
+
     # Make sure that node group is valid
-    ClusterCreateNodeGroups(data)
+    try:
+        ClusterCreateNodeGroups(data)
+    except PropertyError as exc:
+        LOG.error('Could not parse node group: %s', value, exc_info=exc)
+        raise argparse.ArgumentTypeError(
+            'Invalid node group: {0}'.format(value))
 
     return data
 
 
 def elapsed_minutes(start):
     return (datetime.now() - start).total_seconds() / 60
+
+
+def parse_connector(value):
+    match = re.match(r'([A-Za-z]\w*)=([A-Za-z]\w*)$', value)
+    if not match:
+        raise argparse.ArgumentTypeError('Must be in the form of type=name')
+
+    return {match.group(1): match.group(2)}
 
 
 @six.add_metaclass(CommandLine)
@@ -192,68 +233,52 @@ class Resource(resource.Resource):
             ClusterResponse,
             wrapper='cluster')
 
-    @command(
-        parser_options=dict(
-            description='Create a new Lava cluster',
-            epilog='See also: http://www.rackspace.com/knowledge_center/'
-                   'article/manage-ssh-key-pairs-for-cloud-servers-with-'
-                   'python-novaclient'
-        ),
-        name=argument(help='Cluster name'),
-        username=argument(
-            help='Login name of the user to install onto the created nodes'),
-        keypair_name=argument(
-            help='SSH keypair name, which must have been created beforehand '
-                 'in nova.'),
-        stack_id=argument(
-            help='Valid Lava stack ID. For a list of stacks, use the '
-                 '`lava2 stacks list` command'),
-        user_scripts=argument(
-            '--user-script', action='append',
-            help='User script ID: See `lava2 scripts --help` for more '
-                 'information; may be used multiple times to provide multiple '
-                 'script IDs'),
-        node_groups=argument(
-            type=parse_node_group, action='append',
-            help='Node group options; may be used multiple times to '
-                 'configure multiple node groups. Each option should be in '
-                 'the form \'<id>(<key>=<value>, ...)\', where <id> is a '
-                 'valid node group ID for the stack and the key-value pairs '
-                 'are options to specify for that node group. Current valid '
-                 'options are `count` and `flavor_id`'),
-        wait=argument(
-            action='store_true',
-            help='Wait for the cluster to become active'
-        ),
-    )
-    @display_table(ClusterDetail)
-    def create(self, name, username, keypair_name, stack_id,
-               user_scripts=None, node_groups=None, wait=False):
+    def create(self, name, stack_id, username=None, ssh_keys=None,
+               user_scripts=None, node_groups=None, connectors=None,
+               wait=False):
         """
+        create(name, stack_id, username=None, ssh_keys=None,
+               user_scripts=None, node_groups=None, connectors=None,
+               wait=None)
+
         Create a cluster
 
         :param name: Cluster name
-        :param username: User to create on the cluster
-        :param keypair_name: SSH keypair name
         :param stack_id: Valid stack identifier
+        :param username: User to create on the cluster; defaults to local user
+        :param ssh_keys: List of SSH keys; if none is specified, it will use
+                         the key '<user>@<hostname>', creating the key from
+                         $HOME/.ssh/id_rsa.pub if it doesn't exist.
         :param node_groups: List of node groups for the cluster
         :param user_scripts: List of user script ID's;
                              See :meth:`Lava.scripts.create`
+        :param connectors: List of connector credentials to use. Each item
+                           must be a `dict` in the form of `{type: name}`
         :param wait: If `True`, wait for the cluster to become active before
                      returning
         :returns: Same as :func:`get`
         """
+        if ssh_keys is None:
+            ssh_keys = [DEFAULT_SSH_KEY]
+        if username is None:
+            username = getuser()
+
         data = dict(
             name=name,
             username=username,
-            keypair_name=keypair_name,
+            ssh_keys=ssh_keys,
             stack_id=stack_id
         )
         if node_groups:
             data.update(node_groups=node_groups)
-
         if user_scripts:
             data.update(scripts=[{'id': script} for script in user_scripts])
+        if connectors:
+            cdata = []
+            for connector in connectors:
+                ctype, name = six.next(six.iteritems(connector))
+                cdata.append({'type': ctype, 'credential': {'name': name}})
+            data.update(connectors=cdata)
 
         request_data = self._marshal_request(
             data, ClusterCreateRequest, wrapper='cluster')
@@ -321,6 +346,77 @@ class Resource(resource.Resource):
             return self.wait(cluster.id)
 
         return cluster
+
+    @command(
+        parser_options=dict(
+            description='Create a new Lava cluster',
+        ),
+        name=argument(help='Cluster name'),
+        username=argument(
+            help='Login name of the user to install onto the created nodes; '
+                 'defaults to {0}'.format(getuser()),
+            default=getuser()),
+        ssh_keys=argument(
+            '--ssh-key', action='append',
+            help="SSH key name; may be used multiple times. If not "
+                 "specified, the client will attempt to use the key "
+                 "'{key}', creating it from ~/.ssh/id_rsa.pub if it "
+                 "doesn't exist. See `lava2 credentials`".format(
+                     key=DEFAULT_SSH_KEY)),
+        stack_id=argument(
+            help='Valid Lava stack ID. For a list of stacks, use the '
+                 '`lava2 stacks list` command'),
+        user_scripts=argument(
+            '--user-script', action='append',
+            help='User script ID: See `lava2 scripts --help` for more '
+                 'information; may be used multiple times to provide multiple '
+                 'script IDs'),
+        node_groups=argument(
+            type=parse_node_group, action='append',
+            help='Node group options; may be used multiple times to '
+                 'configure multiple node groups. Each option should be in '
+                 'the form <id>(<key>=<value>, ...), where <id> is a valid '
+                 'node group ID for the stack and the key-value pairs are '
+                 'options to specify for that node group. Current valid '
+                 'options are `count` and `flavor_id`'),
+        connectors=argument(
+            '--connector', action='append', type=parse_connector,
+            help='Connector credentials to use in the cluster. Each must be '
+                 'in the form of `type=name`. See `lava2 credentials`'),
+        wait=argument(
+            action='store_true',
+            help='Wait for the cluster to become active'
+        ),
+    )
+    @display_table(ClusterDetail)
+    def _create(self, name, stack_id, username=None, ssh_keys=None,
+                user_scripts=None, node_groups=None, connectors=None,
+                wait=False):
+        """
+        CLI-only; cluster create command
+        """
+        if ssh_keys is None:
+            ssh_keys = [DEFAULT_SSH_KEY]
+
+        try:
+            return self.create(name, stack_id, username, ssh_keys,
+                               user_scripts, node_groups, connectors, wait)
+        except error.RequestError as exc:
+            if not (ssh_keys == [DEFAULT_SSH_KEY] and
+                    'Cannot find requested ssh_keys' in str(exc)):
+                raise
+
+            six.print_('SSH key does not exist; creating...')
+
+            # Create the SSH key for the user and then attempt to create the
+            # cluster again
+            with open(expand('$HOME/.ssh/id_rsa.pub')) as f:
+                self._client.credentials.create_ssh_key(
+                    DEFAULT_SSH_KEY,
+                    f.read().strip())
+
+            return self.create(name, stack_id, username, ssh_keys,
+                               user_scripts, node_groups, connectors, wait)
 
     @command(
         parser_options=dict(
