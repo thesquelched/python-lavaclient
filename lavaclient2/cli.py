@@ -134,8 +134,6 @@ def execute_command(client, args):
     if resource == 'shell':
         args.enable_cli = False
 
-    client = create_client(args)
-
     if resource in COMMAND_DISPATCH:
         COMMAND_DISPATCH[resource](client, args)
         sys.exit(0)
