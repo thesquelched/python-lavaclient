@@ -194,6 +194,7 @@ def parse_argv():
                          help='Keystone auth password')
     general.add_argument('--insecure', '-k', action='store_false',
                          dest='verify_ssl',
+                         default=not os.environ.get('LAVA_INSECURE'),
                          help='Turn of SSL cert validation')
     general.set_defaults(enable_cli=True)
 
