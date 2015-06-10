@@ -15,9 +15,10 @@ def test_list(print_table, mock_client, stacks_response):
     (data, header), kwargs = print_table.call_args
     alldata = list(data)
     assert len(alldata) == 1
-    assert list(item[:3] for item in alldata) == [['stack_id',
+    assert list(item[:4] for item in alldata) == [['stack_id',
                                                    'stack_name',
-                                                   'distro']]
+                                                   'distro',
+                                                   'description']]
     pieces = list(sorted(alldata[0][-1]
                          .strip('[]')
                          .strip('}{')
@@ -35,10 +36,10 @@ def test_get(print_table, print_single_table, mock_client, stack_response):
 
     assert print_single_table.call_count == 1
     (data, header), kwargs = print_single_table.call_args
-    assert data[:4] == ['stack_id', 'stack_name', 'distro',
-                        datetime(2015, 1, 1)]
-    assert data[5] == '[id]'
-    pieces = list(sorted(data[4]
+    assert data[:5] == ['stack_id', 'stack_name', 'distro',
+                        datetime(2015, 1, 1), 'description']
+    assert data[6] == '[id]'
+    pieces = list(sorted(data[5]
                          .strip('[]')
                          .strip('}{')
                          .replace('\n', '')
@@ -86,10 +87,10 @@ def test_create(services, node_groups, print_table, print_single_table,
 
     assert print_single_table.call_count == 1
     (data, header), kwargs = print_single_table.call_args
-    assert data[:4] == ['stack_id', 'stack_name', 'distro',
-                        datetime(2015, 1, 1)]
-    assert data[5] == '[id]'
-    pieces = list(sorted(data[4]
+    assert data[:5] == ['stack_id', 'stack_name', 'distro',
+                        datetime(2015, 1, 1), 'description']
+    assert data[6] == '[id]'
+    pieces = list(sorted(data[5]
                          .strip('[]')
                          .strip('}{')
                          .replace('\n', '')

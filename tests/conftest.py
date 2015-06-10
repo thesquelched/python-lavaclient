@@ -211,6 +211,7 @@ def stack(stack_service, link_response):
         'id': 'stack_id',
         'name': 'stack_name',
         'distro': 'distro',
+        'description': 'description',
         'services': [stack_service],
         'links': [link_response],
     }

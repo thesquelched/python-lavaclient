@@ -82,6 +82,8 @@ class CreateStackRequest(Config):
 
     name = Field(six.text_type, required=True,
                  validator=Length(min=1, max=255))
+    description = Field(six.text_type,
+                        validator=Length(min=1, max=1024))
     distro = Field(six.text_type, required=True,
                    validator=Length(min=1, max=255))
     services = ListField(Service, required=True)
@@ -193,10 +195,13 @@ class Resource(resource.Resource):
                                'JSON data; see SERVICES'),
         node_groups=argument(type=read_json,
                              help='JSON data string or p ath to file '
-                                  'containing JSON data; see NODE GROUPS')
+                                  'containing JSON data; see NODE GROUPS'),
+        description=argument(help='A brief description of the purpose '
+                                  'of the stack')
     )
     @display_table(StackDetail)
-    def create(self, name, distro, services, node_groups=None):
+    def create(self, name, distro, services, node_groups=None,
+               description=None):
         """
         Create a stack
 
@@ -214,6 +219,8 @@ class Resource(resource.Resource):
         )
         if node_groups:
             data.update(node_groups=node_groups)
+        if description:
+            data.update(description=description)
 
         request_data = self._marshal_request(
             data, CreateStackRequest, wrapper='stack')

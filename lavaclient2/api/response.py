@@ -322,14 +322,19 @@ class BaseStack(object):
 @prettify('services')
 class Stack(Config, IdReprMixin, BaseStack):
 
-    table_columns = ('id', 'name', 'distro', '_services')
-    table_header = ('ID', 'Name', 'Distro', 'Services')
+    table_columns = ('id', 'name', 'distro', '_description', '_services')
+    table_header = ('ID', 'Name', 'Distro', 'Description', 'Services')
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
+    description = Field(six.text_type)
     links = ListField(Link, required=True)
     distro = Field(six.text_type, required=True)
     services = ListField(StackService, required=True)
+
+    @property
+    def _description(self):
+        return '\n'.join(textwrap.wrap(self.description, 50))
 
 
 @prettify('node_groups')
@@ -337,10 +342,10 @@ class StackDetail(Stack, IdReprMixin, BaseStack):
 
     __inherits__ = [Stack]
 
-    table_columns = ('id', 'name', 'distro', 'created', '_services',
-                     '_node_group_ids')
-    table_header = ('ID', 'Name', 'Distro', 'Created', 'Services',
-                    'Node Groups')
+    table_columns = ('id', 'name', 'distro', 'created', '_description',
+                     '_services', '_node_group_ids')
+    table_header = ('ID', 'Name', 'Distro', 'Created', 'Description',
+                    'Services', 'Node Groups')
 
     created = Field(DateTime, required=True)
     node_groups = ListField(StackNodeGroup, required=True)
