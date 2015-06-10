@@ -138,9 +138,6 @@ class ClusterUpdateRequest(Config):
 
     """Update a cluster resource"""
 
-    action = Field(six.text_type, required=True,
-                   validator=Length(min=1, max=255),
-                   choices=['resize'])
     cluster = Field(ClusterResizeRequest)
 
 
@@ -328,7 +325,6 @@ class Resource(resource.Resource):
                                      "in the node groups")
 
         data = dict(
-            action="resize",
             cluster=dict(
                 node_groups=node_groups
             )
