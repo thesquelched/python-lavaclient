@@ -213,7 +213,13 @@ def parse_argv():
         subparser.set_defaults(resource=name)
         module.Resource._add_arguments(parser_base, subparser)
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    # Force re-authentication for the 'authenticate' method
+    if args.resource == 'authenticate':
+        args.token = None
+
+    return args
 
 
 def main():
