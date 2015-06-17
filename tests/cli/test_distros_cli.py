@@ -1,7 +1,7 @@
 from mock import patch
 
-from lavaclient2.cli import main
-from lavaclient2.api.response import DistroDetail, DistroService
+from lavaclient.cli import main
+from lavaclient.api.response import DistroDetail, DistroService
 
 
 @patch('sys.argv', ['lava2', 'distros', 'list'])

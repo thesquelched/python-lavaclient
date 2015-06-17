@@ -1,8 +1,8 @@
 import pytest
 from mock import patch, MagicMock
 
-from lavaclient2.client import Lava
-from lavaclient2.cli import initialize_logging
+from lavaclient.client import Lava
+from lavaclient.cli import initialize_logging
 
 
 class Exits(Exception):
@@ -26,9 +26,9 @@ def mock_client(request):
         raise Exits(args)
 
     patchers = [
-        patch('lavaclient2.cli.initialize_logging', init_logging),
+        patch('lavaclient.cli.initialize_logging', init_logging),
         patch('sys.exit', exit),
-        patch('lavaclient2.cli.create_client',
+        patch('lavaclient.cli.create_client',
               MagicMock(return_value=client)),
     ]
 
@@ -41,14 +41,14 @@ def mock_client(request):
 
 @pytest.fixture
 def print_table(request):
-    patcher = patch('lavaclient2.util.print_table')
+    patcher = patch('lavaclient.util.print_table')
     request.addfinalizer(patcher.stop)
     return patcher.start()
 
 
 @pytest.fixture
 def print_single_table(request):
-    patcher = patch('lavaclient2.util.print_single_table')
+    patcher = patch('lavaclient.util.print_single_table')
     request.addfinalizer(patcher.stop)
     return patcher.start()
 

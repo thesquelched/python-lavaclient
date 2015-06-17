@@ -1,7 +1,7 @@
 from mock import patch, MagicMock
 import pytest
 
-from lavaclient2 import client
+from lavaclient import client
 
 
 @pytest.fixture

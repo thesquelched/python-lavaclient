@@ -18,10 +18,10 @@ from figgis import Config, Field, ListField
 from dateutil.parser import parse as dateparse
 from datetime import datetime
 
-from lavaclient2.validators import Length, Range
-from lavaclient2.util import display_result, prettify, _prettify, ssh_to_host
-from lavaclient2.log import NullHandler
-from lavaclient2 import error
+from lavaclient.validators import Length, Range
+from lavaclient.util import display_result, prettify, _prettify, ssh_to_host
+from lavaclient.log import NullHandler
+from lavaclient import error
 
 
 LOG = logging.getLogger(__name__)

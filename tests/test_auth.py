@@ -15,9 +15,9 @@ import pytest
 from mock import patch, MagicMock
 from keystoneclient import exceptions
 
-from lavaclient2.client import Lava
-from lavaclient2 import error
-from lavaclient2 import keystone
+from lavaclient.client import Lava
+from lavaclient import error
+from lavaclient import keystone
 
 
 @pytest.fixture

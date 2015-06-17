@@ -18,14 +18,14 @@ import uuid
 import requests
 from threading import Lock
 
-from lavaclient2._version import __version__
-from lavaclient2 import keystone
-from lavaclient2 import util
-from lavaclient2 import constants
-from lavaclient2 import error
-from lavaclient2.log import NullHandler
-from lavaclient2.api import (clusters, limits, flavors, stacks, distros,
-                             workloads, scripts, nodes, credentials)
+from lavaclient._version import __version__
+from lavaclient import keystone
+from lavaclient import util
+from lavaclient import constants
+from lavaclient import error
+from lavaclient.log import NullHandler
+from lavaclient.api import (clusters, limits, flavors, stacks, distros,
+                            workloads, scripts, nodes, credentials)
 
 
 LOG = logging.getLogger(__name__)
@@ -226,7 +226,7 @@ class Lava(object):
         return {
             'X-Auth-Token': self.token,
             'Client-Request-ID': six.text_type(uuid.uuid4()),
-            'User-Agent': 'python-lavaclient2 {0}'.format(__version__),
+            'User-Agent': 'python-lavaclient {0}'.format(__version__),
         }
 
     def _request(self, method, path, reauthenticate=True, **kwargs):

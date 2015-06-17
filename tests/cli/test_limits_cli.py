@@ -1,13 +1,13 @@
 import pytest
 from mock import patch
 
-from lavaclient2.cli import main
+from lavaclient.cli import main
 
 
 @pytest.fixture
 def print_table(request):
     # Override from conftest because limits imports the function directly
-    patcher = patch('lavaclient2.api.limits.print_table')
+    patcher = patch('lavaclient.api.limits.print_table')
     request.addfinalizer(patcher.stop)
     return patcher.start()
 

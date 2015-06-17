@@ -1,7 +1,7 @@
 from mock import patch
 
-from lavaclient2.cli import main
-from lavaclient2.api.response import Node
+from lavaclient.cli import main
+from lavaclient.api.response import Node
 
 
 @patch('sys.argv', ['lava2', 'nodes', 'list', 'cluster_id'])

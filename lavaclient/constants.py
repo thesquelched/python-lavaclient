@@ -13,7 +13,7 @@
 """Lava client constants"""
 
 # Internals
-LOGGER_NAME = 'lavaclient2'
+LOGGER_NAME = 'lavaclient'
 
 
 # Authentication

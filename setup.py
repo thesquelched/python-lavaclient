@@ -29,10 +29,10 @@ def requirements():
 
 
 def read_version():
-    """Read the version from the lavaclient2 module"""
+    """Read the version from the lavaclient module"""
     path = os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
-        'lavaclient2',
+        'lavaclient',
         '_version.py'
     )
     with open(path) as f:
@@ -43,7 +43,7 @@ def read_version():
 
 if __name__ == '__main__':
     setup(
-        name='python-lavaclient2',
+        name='python-lavaclient',
         version=read_version(),
         author='Rackspace',
         description='Client library for Rackspace Cloud Big Data API',
@@ -68,6 +68,6 @@ if __name__ == '__main__':
             "Programming Language :: Python"
         ],
         entry_points={
-            'console_scripts': ['lava2 = lavaclient2.cli:main'],
+            'console_scripts': ['lava2 = lavaclient.cli:main'],
         },
     )

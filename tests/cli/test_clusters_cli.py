@@ -4,11 +4,13 @@ import pytest
 from mock import patch, call, MagicMock
 from datetime import datetime
 from copy import deepcopy
+from six.moves import StringIO
+from contextlib import contextmanager
 
-from lavaclient2.cli import main
-from lavaclient2.api.response import Cluster, ClusterDetail, NodeGroup, Node
-from lavaclient2.api.clusters import DEFAULT_SSH_KEY
-from lavaclient2.error import RequestError
+from lavaclient.cli import main
+from lavaclient.api.response import Cluster, ClusterDetail, NodeGroup, Node
+from lavaclient.api.clusters import DEFAULT_SSH_KEY
+from lavaclient.error import RequestError
 
 
 @patch('sys.argv', ['lava2', 'clusters', 'list'])
@@ -87,8 +89,14 @@ def test_create_ssh_keys(args, keys, mock_client, print_table,
         assert kwargs['json']['cluster'].get('ssh_keys') == keys
 
 
+@contextmanager
+def mock_keyfile(*args, **kwargs):
+    yield StringIO('a' * 50)
+
+
 @pytest.mark.usefixtures('print_table', 'print_single_table')
 @patch('sys.argv', ['lava2', 'clusters', 'create', 'name', 'stack_id'])
+@patch('lavaclient.api.clusters.open', mock_keyfile, create=True)
 def test_create_no_ssh_key(mock_client, cluster_response, ssh_key_response):
     mock_client._request.side_effect = [
         RequestError('Cannot find requested ssh_keys: {0}'.format(
@@ -151,7 +159,7 @@ def test_delete(mock_client):
 
 
 @patch('sys.argv', ['lava2', 'clusters', 'wait', 'cluster_id'])
-@patch('lavaclient2.api.clusters.elapsed_minutes',
+@patch('lavaclient.api.clusters.elapsed_minutes',
        MagicMock(side_effect=[0.0, 1.0, 2.0]))
 @patch('time.sleep', MagicMock)
 @patch('sys.stdout')
@@ -236,7 +244,7 @@ def test_ssh_proxy(popen, mock_client, cluster_response, nodes_response):
                                      socks.ProxyConnectionError,
                                      socks.GeneralProxyError])
 @patch('subprocess.Popen')
-@patch('lavaclient2.util.test_socks_connection')
+@patch('lavaclient.util.test_socks_connection')
 def test_ssh_proxy_errors(test_connection, popen, failure, mock_client,
                           cluster_response, nodes_response):
     del nodes_response['nodes'][0]['components'][0]['uri']
@@ -281,7 +289,7 @@ def test_ssh_proxy_cmd_fail(popen, mock_client, cluster_response,
 
 @pytest.mark.parametrize('error_code', [400, 500])
 @patch('subprocess.Popen')
-@patch('lavaclient2.util.test_socks_connection')
+@patch('lavaclient.util.test_socks_connection')
 def test_ssh_proxy_http_fail(test_connection, popen, error_code, mock_client,
                              cluster_response, nodes_response):
     popen.return_value = MagicMock(

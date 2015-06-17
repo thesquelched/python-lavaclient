@@ -14,12 +14,12 @@ import logging
 import six
 from figgis import Config, ListField, Field
 
-from lavaclient2.api import resource
-from lavaclient2.api.response import Stack, StackDetail
-from lavaclient2.validators import Length, List, Range
-from lavaclient2.util import (CommandLine, command, argument, display_table,
-                              read_json)
-from lavaclient2.log import NullHandler
+from lavaclient.api import resource
+from lavaclient.api.response import Stack, StackDetail
+from lavaclient.validators import Length, List, Range
+from lavaclient.util import (CommandLine, command, argument, display_table,
+                             read_json)
+from lavaclient.log import NullHandler
 
 
 LOG = logging.getLogger(__name__)

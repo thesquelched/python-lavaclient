@@ -23,7 +23,7 @@ from keystoneclient.auth.identity import v2 as v2_auth
 from keystoneclient.exceptions import (
     AuthorizationFailure, Unauthorized, EndpointNotFound)
 
-from lavaclient2.log import NullHandler
+from lavaclient.log import NullHandler
 
 
 LOG = logging.getLogger(__name__)

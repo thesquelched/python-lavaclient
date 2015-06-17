@@ -12,9 +12,9 @@
 
 import logging
 
-from lavaclient2 import _version
-from lavaclient2.client import Lava
-from lavaclient2.log import NullHandler
+from lavaclient import _version
+from lavaclient.client import Lava
+from lavaclient.log import NullHandler
 
 
 __version_info__ = _version.__version_info__

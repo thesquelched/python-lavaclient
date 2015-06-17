@@ -1,8 +1,8 @@
 import pytest
 from mock import patch
 
-from lavaclient2.api import limits
-from lavaclient2 import error
+from lavaclient.api import limits
+from lavaclient import error
 
 
 def test_get(lavaclient, limits_response):

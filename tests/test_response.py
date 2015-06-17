@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 
-from lavaclient2.api import response
+from lavaclient.api import response
 
 
 @pytest.fixture

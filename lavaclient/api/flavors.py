@@ -14,10 +14,10 @@ import six
 import logging
 from figgis import Config, ListField
 
-from lavaclient2.api import resource
-from lavaclient2.api.response import Flavor
-from lavaclient2.util import CommandLine, command, display_table
-from lavaclient2.log import NullHandler
+from lavaclient.api import resource
+from lavaclient.api.response import Flavor
+from lavaclient.util import CommandLine, command, display_table
+from lavaclient.log import NullHandler
 
 
 LOG = logging.getLogger(__name__)

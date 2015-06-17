@@ -1,8 +1,8 @@
 import pytest
 from mock import patch
 
-from lavaclient2.api import response
-from lavaclient2 import error
+from lavaclient.api import response
+from lavaclient import error
 
 
 def test_list(lavaclient, distros_response):

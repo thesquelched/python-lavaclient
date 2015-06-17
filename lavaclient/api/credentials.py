@@ -15,13 +15,13 @@ import logging
 from itertools import chain
 from figgis import Config, ListField, Field
 
-from lavaclient2.api import resource
-from lavaclient2.api.response import (CloudFilesCredential, SSHKey,
-                                      CredentialType)
-from lavaclient2.validators import Length
-from lavaclient2.util import (CommandLine, argument, command, display_table,
-                              file_or_string, print_table)
-from lavaclient2.log import NullHandler
+from lavaclient.api import resource
+from lavaclient.api.response import (CloudFilesCredential, SSHKey,
+                                     CredentialType)
+from lavaclient.validators import Length
+from lavaclient.util import (CommandLine, argument, command, display_table,
+                             file_or_string, print_table)
+from lavaclient.log import NullHandler
 
 
 LOG = logging.getLogger(__name__)

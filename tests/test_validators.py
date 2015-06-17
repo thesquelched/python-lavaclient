@@ -1,6 +1,6 @@
 import pytest
 from figgis import ValidationError
-from lavaclient2 import validators
+from lavaclient import validators
 
 
 def test_range():

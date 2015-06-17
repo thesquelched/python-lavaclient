@@ -3,8 +3,8 @@ import json
 from mock import patch
 from datetime import datetime
 
-from lavaclient2.cli import main
-from lavaclient2.api.response import Stack, StackDetail, StackNodeGroup
+from lavaclient.cli import main
+from lavaclient.api.response import Stack, StackDetail, StackNodeGroup
 
 
 @patch('sys.argv', ['lava2', 'stacks', 'list'])

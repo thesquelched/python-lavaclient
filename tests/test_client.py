@@ -2,8 +2,8 @@ from mock import patch, MagicMock
 import pytest
 import requests
 
-from lavaclient2 import error
-from lavaclient2 import __version__
+from lavaclient import error
+from lavaclient import __version__
 
 
 @patch('uuid.uuid4')
@@ -17,7 +17,7 @@ def test_requests(uuid4, lavaclient):
             verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
-                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                     'User-Agent': 'python-lavaclient {0}'.format(
                          __version__)})
 
     with patch('requests.request') as request:
@@ -27,7 +27,7 @@ def test_requests(uuid4, lavaclient):
             verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
-                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                     'User-Agent': 'python-lavaclient {0}'.format(
                          __version__)})
 
     with patch('requests.request') as request:
@@ -37,7 +37,7 @@ def test_requests(uuid4, lavaclient):
             verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
-                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                     'User-Agent': 'python-lavaclient {0}'.format(
                          __version__)})
 
     with patch('requests.request') as request:
@@ -47,7 +47,7 @@ def test_requests(uuid4, lavaclient):
             verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
-                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                     'User-Agent': 'python-lavaclient {0}'.format(
                          __version__)})
 
 
@@ -63,7 +63,7 @@ def test_headers(uuid4, lavaclient):
             headers={'foo': 'bar',
                      'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
-                     'User-Agent': 'python-lavaclient2 {0}'.format(
+                     'User-Agent': 'python-lavaclient {0}'.format(
                          __version__)})
 
 

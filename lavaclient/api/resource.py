@@ -14,9 +14,9 @@ import logging
 import figgis
 import six
 
-from lavaclient2 import error
-from lavaclient2.log import NullHandler
-from lavaclient2.util import inject_client
+from lavaclient import error
+from lavaclient.log import NullHandler
+from lavaclient.util import inject_client
 
 
 LOG = logging.getLogger(__name__)

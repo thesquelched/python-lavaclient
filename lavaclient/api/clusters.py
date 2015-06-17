@@ -22,13 +22,13 @@ from getpass import getuser
 from datetime import datetime, timedelta
 from figgis import Config, ListField, Field, PropertyError, ValidationError
 
-from lavaclient2.api import resource
-from lavaclient2.api.response import Cluster, ClusterDetail, Node
-from lavaclient2 import error
-from lavaclient2.validators import Length, Range, List
-from lavaclient2.util import (CommandLine, argument, command, display_table,
-                              coroutine, create_socks_proxy, expand)
-from lavaclient2.log import NullHandler
+from lavaclient.api import resource
+from lavaclient.api.response import Cluster, ClusterDetail, Node
+from lavaclient import error
+from lavaclient.validators import Length, Range, List
+from lavaclient.util import (CommandLine, argument, command, display_table,
+                             coroutine, create_socks_proxy, expand)
+from lavaclient.log import NullHandler
 
 
 LOG = logging.getLogger(__name__)

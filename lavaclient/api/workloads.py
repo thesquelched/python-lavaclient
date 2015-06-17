@@ -15,11 +15,11 @@ import textwrap
 import logging
 from figgis import Config, Field, ListField
 
-from lavaclient2.api import resource
-from lavaclient2.util import (display, display_table, CommandLine, command,
-                              argument, print_table)
-from lavaclient2.api.response import Workload, Recommendations
-from lavaclient2.log import NullHandler
+from lavaclient.api import resource
+from lavaclient.util import (display, display_table, CommandLine, command,
+                             argument, print_table)
+from lavaclient.api.response import Workload, Recommendations
+from lavaclient.log import NullHandler
 from itertools import repeat, chain
 
 

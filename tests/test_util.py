@@ -3,7 +3,7 @@ import six
 from mock import patch
 from figgis import Config, Field, ListField
 
-from lavaclient2 import util
+from lavaclient import util
 
 
 def test_b64encode():

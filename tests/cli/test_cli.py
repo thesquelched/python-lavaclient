@@ -1,6 +1,6 @@
 from mock import patch
 
-from lavaclient2.cli import parse_argv
+from lavaclient.cli import parse_argv
 
 
 @patch('sys.argv', ['lava2', 'authenticate', '--token', 'mytoken'])

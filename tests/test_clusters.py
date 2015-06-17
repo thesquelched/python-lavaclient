@@ -1,8 +1,8 @@
 import pytest
 from mock import patch, MagicMock
 
-from lavaclient2.api import response
-from lavaclient2 import error
+from lavaclient.api import response
+from lavaclient import error
 
 
 @pytest.fixture

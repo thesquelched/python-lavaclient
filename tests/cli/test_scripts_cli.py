@@ -2,8 +2,8 @@ import pytest
 from mock import patch
 from datetime import datetime
 
-from lavaclient2.cli import main
-from lavaclient2.api.response import Script
+from lavaclient.cli import main
+from lavaclient.api.response import Script
 
 
 @patch('sys.argv', ['lava2', 'scripts', 'list'])

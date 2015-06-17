@@ -1,7 +1,7 @@
 from mock import patch
 
-from lavaclient2.cli import main
-from lavaclient2.api.response import Flavor
+from lavaclient.cli import main
+from lavaclient.api.response import Flavor
 
 
 @patch('sys.argv', ['lava2', 'flavors', 'list'])

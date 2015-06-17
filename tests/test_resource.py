@@ -2,8 +2,8 @@ import pytest
 import figgis
 
 
-from lavaclient2.api import resource
-from lavaclient2 import error
+from lavaclient.api import resource
+from lavaclient import error
 
 
 @pytest.fixture

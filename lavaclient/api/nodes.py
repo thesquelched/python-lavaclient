@@ -2,10 +2,10 @@ import logging
 import six
 from figgis import Config, ListField
 
-from lavaclient2.api import resource
-from lavaclient2 import constants
-from lavaclient2.api.response import Node
-from lavaclient2.util import command, display_table, CommandLine
+from lavaclient.api import resource
+from lavaclient import constants
+from lavaclient.api.response import Node
+from lavaclient.util import command, display_table, CommandLine
 
 LOG = logging.getLogger(constants.LOGGER_NAME)
 

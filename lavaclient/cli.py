@@ -17,13 +17,13 @@ import getpass
 import logging
 import os
 
-from lavaclient2._version import __version__
-from lavaclient2.client import Lava
-from lavaclient2.error import LavaError
-from lavaclient2.util import get_function_arguments, first_exists
-from lavaclient2.log import NullHandler
-from lavaclient2.api import (clusters, limits, flavors, stacks, distros,
-                             workloads, scripts, nodes, credentials)
+from lavaclient._version import __version__
+from lavaclient.client import Lava
+from lavaclient.error import LavaError
+from lavaclient.util import get_function_arguments, first_exists
+from lavaclient.log import NullHandler
+from lavaclient.api import (clusters, limits, flavors, stacks, distros,
+                            workloads, scripts, nodes, credentials)
 
 
 LOG = logging.getLogger(__name__)
@@ -225,7 +225,7 @@ def parse_argv():
 def main():
     args = parse_argv()
     if args.version:
-        six.print_('lavaclient2 version ' + __version__)
+        six.print_('lavaclient version ' + __version__)
         sys.exit(0)
 
     initialize_logging(args)

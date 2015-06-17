@@ -1,6 +1,6 @@
 from mock import patch
 
-from lavaclient2.api import response
+from lavaclient.api import response
 
 
 def test_list(lavaclient, nodes_response):

@@ -34,8 +34,8 @@ from collections import namedtuple
 from figgis import Config
 from prettytable import PrettyTable
 
-from lavaclient2.log import NullHandler
-from lavaclient2 import error
+from lavaclient.log import NullHandler
+from lavaclient import error
 
 
 RETRY_DEFAULT_ATTEMPTS = 3

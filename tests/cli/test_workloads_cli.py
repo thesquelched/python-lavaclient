@@ -1,13 +1,13 @@
 import pytest
 from mock import patch
 
-from lavaclient2.cli import main
-from lavaclient2.api.workloads import Workload
+from lavaclient.cli import main
+from lavaclient.api.workloads import Workload
 
 
 @pytest.fixture
 def api_print_table(request):
-    patcher = patch('lavaclient2.api.workloads.print_table')
+    patcher = patch('lavaclient.api.workloads.print_table')
     request.addfinalizer(patcher.stop)
     return patcher.start()
 
