@@ -657,11 +657,27 @@ def ssh_to_host(username, host, ssh_command=None, command=None):
     command_list = ssh_cmd + ['{0}@{1}'.format(username, host)]
     if command:
         command_list.append(six.text_type(command))
-        call_func = subprocess.check_output
-    else:
-        call_func = subprocess.call
 
     LOG.debug('SSH command: %s', ' '.join(command_list))
-    return call_func(
-        [expand(item) for item in command_list],
-        stderr=subprocess.STDOUT)
+
+    if command:
+        proc = subprocess.Popen(
+            [expand(item) for item in command_list],
+            stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE)
+
+        output = proc.communicate()[0]
+        returncode = proc.returncode
+    else:
+        returncode = subprocess.call([expand(item) for item in command_list])
+        output = None
+
+    if returncode:
+        msg = 'Command returned non-zero status code {0}'.format(
+            proc.returncode)
+        LOG.error(msg)
+        LOG.debug('Command output:\n%s', output)
+
+        raise error.FailedError(msg)
+
+    return output

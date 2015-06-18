@@ -638,13 +638,19 @@ class Resource(resource.Resource):
         """
         Command-line only. SSH to the desired cluster node.
         """
+        output = self._execute_ssh(cluster_id, node_name=node_name,
+                                   ssh_command=ssh_command, wait=wait,
+                                   command=command)
+        if command:
+            six.print_(output)
+
+    def _execute_ssh(self, cluster_id, node_name=None, ssh_command=None,
+                     wait=False, command=None):
         cluster, nodes = self._cluster_nodes(cluster_id, wait=wait)
         node = self._get_named_node(nodes, node_name=node_name)
 
-        output = node._ssh(cluster.username, command=command,
-                           ssh_command=ssh_command)
-        if command:
-            six.print_(output)
+        return node._ssh(cluster.username, command=command,
+                         ssh_command=ssh_command)
 
     def ssh_execute(self, cluster_id, node_name, command, ssh_command=None,
                     wait=False):
@@ -661,5 +667,6 @@ class Resource(resource.Resource):
                      creating the proxy
         :returns: The output of running the command
         """
-        return self._ssh(cluster_id, node_name=node_name,
-                         ssh_command=ssh_command, command=command, wait=wait)
+        return self._execute_ssh(cluster_id, node_name=node_name,
+                                 ssh_command=ssh_command, command=command,
+                                 wait=wait)
