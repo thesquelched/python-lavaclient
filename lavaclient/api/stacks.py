@@ -110,7 +110,7 @@ When creating a custom stack, you must indicate which services you want to be
 installed. You can see a list of services available in a certain distribution
 using the following command:
 
-    lava2 distros get <distro_id>
+    lava distros get <distro_id>
 
 To specify the services you want to be included with your stack, you must pass
 in a valid JSON string containing a list of services, with each service being
@@ -189,7 +189,7 @@ class Resource(resource.Resource):
         ),
         name=argument(help='A stack identifier, e.g. MY_HADOOP_STACK'),
         distro=argument(help='An existing distribution ID; see '
-                             '`lava2 distros list`'),
+                             '`lava distros list`'),
         services=argument(type=read_json,
                           help='JSON data string or path to file containing '
                                'JSON data; see SERVICES'),

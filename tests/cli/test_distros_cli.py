@@ -4,7 +4,7 @@ from lavaclient.cli import main
 from lavaclient.api.response import DistroDetail, DistroService
 
 
-@patch('sys.argv', ['lava2', 'distros', 'list'])
+@patch('sys.argv', ['lava', 'distros', 'list'])
 def test_list(print_table, mock_client, distros_response):
     mock_client._request.return_value = distros_response
     main()
@@ -15,7 +15,7 @@ def test_list(print_table, mock_client, distros_response):
     assert kwargs['title'] is None
 
 
-@patch('sys.argv', ['lava2', 'distros', 'get', 'distro_id'])
+@patch('sys.argv', ['lava', 'distros', 'get', 'distro_id'])
 def test_get(print_table, print_single_table, mock_client, distro_response):
     mock_client._request.return_value = distro_response
     main()

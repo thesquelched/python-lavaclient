@@ -12,7 +12,7 @@ def print_table(request):
     return patcher.start()
 
 
-@patch('sys.argv', ['lava2', 'limits', 'get'])
+@patch('sys.argv', ['lava', 'limits', 'get'])
 def test_get(print_table, mock_client, limits_response):
     mock_client._request.return_value = limits_response
     main()

@@ -7,7 +7,7 @@ from lavaclient.cli import main
 from lavaclient.api.response import Stack, StackDetail, StackNodeGroup
 
 
-@patch('sys.argv', ['lava2', 'stacks', 'list'])
+@patch('sys.argv', ['lava', 'stacks', 'list'])
 def test_list(print_table, mock_client, stacks_response):
     mock_client._request.return_value = stacks_response
     main()
@@ -29,7 +29,7 @@ def test_list(print_table, mock_client, stacks_response):
     assert kwargs['title'] is None
 
 
-@patch('sys.argv', ['lava2', 'stacks', 'get', 'stack_id'])
+@patch('sys.argv', ['lava', 'stacks', 'get', 'stack_id'])
 def test_get(print_table, print_single_table, mock_client, stack_response):
     mock_client._request.return_value = stack_response
     main()
@@ -72,7 +72,7 @@ def test_create(services, node_groups, print_table, print_single_table,
                 mock_client, stack_response):
     mock_client._request.return_value = stack_response
 
-    args = ['lava2', 'stacks', 'create', 'name', 'distro',
+    args = ['lava', 'stacks', 'create', 'name', 'distro',
             json.dumps(services)]
     if node_groups:
         args.extend(['--node-groups', json.dumps(node_groups)])
@@ -107,7 +107,7 @@ def test_create(services, node_groups, print_table, print_single_table,
     assert kwargs['title'] == 'Node Groups'
 
 
-@patch('sys.argv', ['lava2', 'stacks', 'delete', 'stack_id'])
+@patch('sys.argv', ['lava', 'stacks', 'delete', 'stack_id'])
 def test_delete(mock_client):
     main()
     args = mock_client._request.call_args[0]

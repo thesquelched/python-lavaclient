@@ -1,4 +1,4 @@
-python-lavaclient2
-==================
+python-lavaclient
+=================
 
-Lava2 API client library
+Lava API client library

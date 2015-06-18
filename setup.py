@@ -68,6 +68,6 @@ if __name__ == '__main__':
             "Programming Language :: Python"
         ],
         entry_points={
-            'console_scripts': ['lava2 = lavaclient.cli:main'],
+            'console_scripts': ['lava = lavaclient.cli:main'],
         },
     )

@@ -4,7 +4,7 @@ from lavaclient.cli import main
 from lavaclient.api.response import Flavor
 
 
-@patch('sys.argv', ['lava2', 'flavors', 'list'])
+@patch('sys.argv', ['lava', 'flavors', 'list'])
 def test_list(print_table, mock_client, flavors_response):
     mock_client._request.return_value = flavors_response
     main()

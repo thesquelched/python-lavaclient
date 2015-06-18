@@ -12,7 +12,7 @@ def api_print_table(request):
     return patcher.start()
 
 
-@patch('sys.argv', ['lava2', 'workloads', 'list'])
+@patch('sys.argv', ['lava', 'workloads', 'list'])
 def test_list(print_table, mock_client, workloads_response):
     mock_client._request.return_value = workloads_response
     main()
@@ -28,7 +28,7 @@ def test_recommendations(persistence, api_print_table, mock_client,
                          recommendations_response):
     mock_client._request.return_value = recommendations_response
 
-    with patch('sys.argv', ['lava2', 'workloads', 'recommendations', 'id',
+    with patch('sys.argv', ['lava', 'workloads', 'recommendations', 'id',
                             '128', persistence]):
         main()
 

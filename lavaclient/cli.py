@@ -71,7 +71,8 @@ def create_client(args):
                                   os.environ.get('LAVA_AUTH_URL'),
                                   os.environ.get('OS_AUTH_URL')),
             endpoint=first_exists(args.endpoint,
-                                  os.environ.get('LAVA2_API_URL')),
+                                  os.environ.get('LAVA2_API_URL'),
+                                  os.environ.get('LAVA_API_URL')),
             verify_ssl=args.verify_ssl,
             _enable_cli=args.enable_cli)
     except LavaError as exc:
@@ -198,7 +199,7 @@ def parse_argv():
                          help='Turn of SSL cert validation')
     general.set_defaults(enable_cli=True)
 
-    parser = argparse.ArgumentParser(prog='lava2', parents=[parser_base])
+    parser = argparse.ArgumentParser(prog='lava', parents=[parser_base])
     subparsers = parser.add_subparsers(title='Commands')
 
     for command, func in COMMAND_DISPATCH.items():

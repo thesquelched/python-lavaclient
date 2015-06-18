@@ -6,7 +6,7 @@ from lavaclient.cli import main
 from lavaclient.api.response import Script
 
 
-@patch('sys.argv', ['lava2', 'scripts', 'list'])
+@patch('sys.argv', ['lava', 'scripts', 'list'])
 def test_list(print_table, mock_client, scripts_response):
     mock_client._request.return_value = scripts_response
     main()
@@ -18,7 +18,7 @@ def test_list(print_table, mock_client, scripts_response):
     assert kwargs['title'] is None
 
 
-@patch('sys.argv', ['lava2', 'scripts', 'create', 'name', 'url', 'post_init'])
+@patch('sys.argv', ['lava', 'scripts', 'create', 'name', 'url', 'post_init'])
 def test_create(print_single_table, mock_client, script_response):
     mock_client._request.return_value = script_response
     main()
@@ -43,7 +43,7 @@ def test_create(print_single_table, mock_client, script_response):
 def test_update(name, url, script_type, print_single_table,
                 mock_client, script_response):
     mock_client._request.return_value = script_response
-    args = ['lava2', 'scripts', 'update', 'script_id']
+    args = ['lava', 'scripts', 'update', 'script_id']
     if name:
         args.extend(['--name', name])
     if url:
@@ -68,7 +68,7 @@ def test_update(name, url, script_type, print_single_table,
     assert kwargs['title'] is None
 
 
-@patch('sys.argv', ['lava2', 'scripts', 'delete', 'script_id'])
+@patch('sys.argv', ['lava', 'scripts', 'delete', 'script_id'])
 def test_delete(mock_client):
     main()
     args = mock_client._request.call_args[0]

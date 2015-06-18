@@ -357,14 +357,14 @@ class Resource(resource.Resource):
             help="SSH key name; may be used multiple times. If not "
                  "specified, the client will attempt to use the key "
                  "'{key}', creating it from ~/.ssh/id_rsa.pub if it "
-                 "doesn't exist. See `lava2 credentials`".format(
+                 "doesn't exist. See `lava credentials`".format(
                      key=DEFAULT_SSH_KEY)),
         stack_id=argument(
             help='Valid Lava stack ID. For a list of stacks, use the '
-                 '`lava2 stacks list` command'),
+                 '`lava stacks list` command'),
         user_scripts=argument(
             '--user-script', action='append',
-            help='User script ID: See `lava2 scripts --help` for more '
+            help='User script ID: See `lava scripts --help` for more '
                  'information; may be used multiple times to provide multiple '
                  'script IDs'),
         node_groups=argument(
@@ -378,7 +378,7 @@ class Resource(resource.Resource):
         connectors=argument(
             '--connector', action='append', type=parse_connector,
             help='Connector credentials to use in the cluster. Each must be '
-                 'in the form of `type=name`. See `lava2 credentials`'),
+                 'in the form of `type=name`. See `lava credentials`'),
         wait=argument(
             action='store_true',
             help='Wait for the cluster to become active'

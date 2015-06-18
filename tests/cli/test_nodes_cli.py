@@ -4,7 +4,7 @@ from lavaclient.cli import main
 from lavaclient.api.response import Node
 
 
-@patch('sys.argv', ['lava2', 'nodes', 'list', 'cluster_id'])
+@patch('sys.argv', ['lava', 'nodes', 'list', 'cluster_id'])
 def test_list(print_table, mock_client, nodes_response):
     mock_client._request.return_value = nodes_response
     main()

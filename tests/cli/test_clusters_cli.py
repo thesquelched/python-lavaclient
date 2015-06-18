@@ -13,7 +13,7 @@ from lavaclient.api.clusters import DEFAULT_SSH_KEY
 from lavaclient.error import RequestError
 
 
-@patch('sys.argv', ['lava2', 'clusters', 'list'])
+@patch('sys.argv', ['lava', 'clusters', 'list'])
 def test_list(print_table, mock_client, clusters_response):
     mock_client._request.return_value = clusters_response
     main()
@@ -25,7 +25,7 @@ def test_list(print_table, mock_client, clusters_response):
     assert kwargs['title'] is None
 
 
-@patch('sys.argv', ['lava2', 'clusters', 'get', 'cluster_id'])
+@patch('sys.argv', ['lava', 'clusters', 'get', 'cluster_id'])
 def test_get(print_table, print_single_table, mock_client, cluster_response):
     mock_client._request.return_value = cluster_response
     main()
@@ -64,7 +64,7 @@ def test_create_node_groups(args, node_groups, print_table,
                             cluster_response):
     mock_client._request.return_value = cluster_response
 
-    base_args = ['lava2', 'clusters', 'create', 'name', 'stack_id']
+    base_args = ['lava', 'clusters', 'create', 'name', 'stack_id']
     with patch('sys.argv', base_args + args):
         main()
 
@@ -81,7 +81,7 @@ def test_create_ssh_keys(args, keys, mock_client, print_table,
                          print_single_table, cluster_response):
     mock_client._request.return_value = cluster_response
 
-    base_args = ['lava2', 'clusters', 'create', 'name', 'stack_id']
+    base_args = ['lava', 'clusters', 'create', 'name', 'stack_id']
     with patch('sys.argv', base_args + args):
         main()
 
@@ -95,7 +95,7 @@ def mock_keyfile(*args, **kwargs):
 
 
 @pytest.mark.usefixtures('print_table', 'print_single_table')
-@patch('sys.argv', ['lava2', 'clusters', 'create', 'name', 'stack_id'])
+@patch('sys.argv', ['lava', 'clusters', 'create', 'name', 'stack_id'])
 @patch('lavaclient.api.clusters.open', mock_keyfile, create=True)
 def test_create_no_ssh_key(mock_client, cluster_response, ssh_key_response):
     mock_client._request.side_effect = [
@@ -110,7 +110,7 @@ def test_create_no_ssh_key(mock_client, cluster_response, ssh_key_response):
 
 
 @pytest.mark.usefixtures('print_table', 'print_single_table')
-@patch('sys.argv', ['lava2', 'clusters', 'create', 'name', 'stack_id',
+@patch('sys.argv', ['lava', 'clusters', 'create', 'name', 'stack_id',
                     '--ssh-key', 'mykey'])
 def test_create_missing_ssh_key(mock_client, cluster_response):
     mock_client._request.side_effect = RequestError(
@@ -124,7 +124,7 @@ def test_create_with_scripts(print_table, print_single_table, mock_client,
                              cluster_response):
     mock_client._request.return_value = cluster_response
 
-    with patch('sys.argv', ['lava2', 'clusters', 'create', 'name', 'stack_id',
+    with patch('sys.argv', ['lava', 'clusters', 'create', 'name', 'stack_id',
                             '--user-script', 'id1', '--user-script', 'id2']):
         main()
         kwargs = mock_client._request.call_args[1]
@@ -141,7 +141,7 @@ def test_resize(args, node_groups, print_table, print_single_table,
                 mock_client, cluster_response):
     mock_client._request.return_value = cluster_response
 
-    base_args = ['lava2', 'clusters', 'resize', 'cluster_id']
+    base_args = ['lava', 'clusters', 'resize', 'cluster_id']
 
     with patch('sys.argv', base_args + args):
         main()
@@ -150,7 +150,7 @@ def test_resize(args, node_groups, print_table, print_single_table,
         assert kwargs['json']['cluster'].get('node_groups') == node_groups
 
 
-@patch('sys.argv', ['lava2', 'clusters', 'delete', 'cluster_id'])
+@patch('sys.argv', ['lava', 'clusters', 'delete', 'cluster_id'])
 def test_delete(mock_client):
     main()
     args = mock_client._request.call_args[0]
@@ -158,7 +158,7 @@ def test_delete(mock_client):
     assert args == ('DELETE', 'clusters/cluster_id')
 
 
-@patch('sys.argv', ['lava2', 'clusters', 'wait', 'cluster_id'])
+@patch('sys.argv', ['lava', 'clusters', 'wait', 'cluster_id'])
 @patch('lavaclient.api.clusters.elapsed_minutes',
        MagicMock(side_effect=[0.0, 1.0, 2.0]))
 @patch('time.sleep', MagicMock)
@@ -206,7 +206,7 @@ def test_wait(stdout, print_table, print_single_table, mock_client,
     assert kwargs['title'] == 'Scripts'
 
 
-@patch('sys.argv', ['lava2', 'clusters', 'nodes', 'cluster_id'])
+@patch('sys.argv', ['lava', 'clusters', 'nodes', 'cluster_id'])
 def test_nodes(print_table, mock_client, nodes_response):
     mock_client._request.return_value = nodes_response
     main()
@@ -229,7 +229,7 @@ def test_ssh_proxy(popen, mock_client, cluster_response, nodes_response):
     )
     mock_client._request.side_effect = [cluster_response, nodes_response]
 
-    with patch('sys.argv', ['lava2', 'clusters', 'ssh_proxy', 'cluster_id',
+    with patch('sys.argv', ['lava', 'clusters', 'ssh_proxy', 'cluster_id',
                             '--node-name', 'NODENAME', '--port', '54321']):
         main()
 
@@ -260,7 +260,7 @@ def test_ssh_proxy_errors(test_connection, popen, failure, mock_client,
 
     mock_client._request.side_effect = [cluster_response, nodes_response]
 
-    with patch('sys.argv', ['lava2', 'clusters', 'ssh_proxy', 'cluster_id',
+    with patch('sys.argv', ['lava', 'clusters', 'ssh_proxy', 'cluster_id',
                             '--node-name', 'NODENAME', '--port',
                             '54321']):
         main()
@@ -281,7 +281,7 @@ def test_ssh_proxy_cmd_fail(popen, mock_client, cluster_response,
     )
     mock_client._request.side_effect = [cluster_response, nodes_response]
 
-    with patch('sys.argv', ['lava2', 'clusters', 'ssh_proxy', 'cluster_id',
+    with patch('sys.argv', ['lava', 'clusters', 'ssh_proxy', 'cluster_id',
                             '--node-name', 'NODENAME', '--port',
                             '54321']):
         pytest.raises(Exception, main)
@@ -299,7 +299,7 @@ def test_ssh_proxy_http_fail(test_connection, popen, error_code, mock_client,
     test_connection.return_value = error_code
     mock_client._request.side_effect = [cluster_response, nodes_response]
 
-    with patch('sys.argv', ['lava2', 'clusters', 'ssh_proxy', 'cluster_id',
+    with patch('sys.argv', ['lava', 'clusters', 'ssh_proxy', 'cluster_id',
                             '--node-name', 'NODENAME', '--port',
                             '54321']):
         pytest.raises(Exception, main)
