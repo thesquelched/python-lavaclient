@@ -53,7 +53,7 @@ def auth_response():
                             "tenantId": "tenantId",
                             "publicURL": "publicURL/v2/tenantId",
                             "internalURL": "internalURL",
-                            "region": "region",
+                            "region": "REGION",
                             "versionId": "versionId",
                             "versionInfo": "versionInfo",
                             "versionList": "versionList"

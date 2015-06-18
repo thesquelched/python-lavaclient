@@ -140,7 +140,7 @@ class Lava(object):
     def _get_endpoint(self, region, tenant_id):
         filters = dict(
             service_type=constants.CBD_SERVICE_TYPE,
-            region_name=region)
+            region_name=region.upper())
 
         if tenant_id:
             filters.update(attr='tenantId', filter_value=tenant_id)
