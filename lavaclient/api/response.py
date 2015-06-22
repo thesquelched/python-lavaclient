@@ -491,3 +491,16 @@ class CloudFilesCredential(Config):
     def delete(self):
         """Delete this credential"""
         self._client.credentials.delete_cloud_files(self.username)
+
+
+class S3Credential(Config):
+
+    table_columns = ('type', 'access_key_id')
+    table_header = ('Type', 'Access Key ID')
+
+    type = 'Amazon S3'
+    access_key_id = Field(six.text_type, required=True)
+
+    def delete(self):
+        """Delete s3 credential"""
+        self.__client.credentials.delete_s3(self.access_key_id)

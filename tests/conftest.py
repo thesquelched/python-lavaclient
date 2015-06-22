@@ -342,6 +342,11 @@ def cloud_files():
 
 
 @pytest.fixture
+def s3():
+    return {'access_key_id': 'access_key_id', 'access_secret_key': 'a' * 40}
+
+
+@pytest.fixture
 def ssh_key_response(ssh_key):
     return {'credentials': {'ssh_keys': ssh_key}}
 
@@ -362,10 +367,21 @@ def cloud_files_creds_response(cloud_files):
 
 
 @pytest.fixture
-def credentials_response(ssh_key, cloud_files):
+def s3_cred_response(s3):
+    return {'credentials': {'s3': s3}}
+
+
+@pytest.fixture
+def s3_creds_response(s3):
+    return {'credentials': {'s3': [s3]}}
+
+
+@pytest.fixture
+def credentials_response(ssh_key, cloud_files, s3):
     return {
         'credentials': {
             'ssh_keys': [ssh_key],
             'cloud_files': [cloud_files],
+            's3': [s3],
         }
     }

@@ -95,7 +95,7 @@ class ClusterCreateNodeGroups(Config):
 class ClusterCreateCredential(Config):
 
     name = Field(six.text_type, required=True,
-                 validator=Length(min=3, max=255))
+                 validator=Length(min=2, max=255))
 
 
 class ClusterCreateConnector(Config):

@@ -17,7 +17,7 @@ from figgis import Config, ListField, Field
 
 from lavaclient.api import resource
 from lavaclient.api.response import (CloudFilesCredential, SSHKey,
-                                     CredentialType)
+                                     S3Credential, CredentialType)
 from lavaclient.validators import Length
 from lavaclient.util import (CommandLine, argument, command, display_table,
                              file_or_string, print_table)
@@ -36,11 +36,13 @@ class Credentials(Config):
 
     cloud_files = ListField(CloudFilesCredential)
     ssh_keys = ListField(SSHKey)
+    s3 = ListField(S3Credential)
 
     def display(self):
         data = chain(
             [('SSH Key', key.name) for key in self.ssh_keys],
             [('Cloud Files', cred.username) for cred in self.cloud_files],
+            [('Amazon S3', cred.access_key_id) for cred in self.s3]
         )
         print_table(data, ('Type', 'Name'))
 
@@ -49,6 +51,7 @@ class Credential(Config):
 
     cloud_files = Field(CloudFilesCredential)
     ssh_keys = Field(SSHKey)
+    s3 = Field(S3Credential)
 
 
 class CredentialsResponse(Config):
@@ -86,6 +89,14 @@ class CreateCloudFilesRequest(Config):
                      validator=Length(min=3, max=255))
     api_key = Field(six.text_type, nullable=False, required=True,
                     validator=Length(min=20, max=40))
+
+
+class CreateS3Request(Config):
+
+    access_key_id = Field(six.text_type, required=True, nullable=False,
+                          validator=Length(min=20, max=20))
+    access_secret_key = Field(six.text_type, nullable=False, required=True,
+                              validator=Length(min=40, max=40))
 
 
 ######################################################################
@@ -146,6 +157,18 @@ class Resource(resource.Resource):
         """
         return self._list(type='cloud_files')
 
+    @command(parser_options=dict(
+        description='List all Amazon S3 credentials'
+    ))
+    @display_table(S3Credential)
+    def list_s3(self):
+        """
+        List all Amazon S3 credentials
+
+        :returns: List of S3Credential objects
+        """
+        return self._list(type='s3')
+
     def list_types(self):
         """
         List all credential types
@@ -199,7 +222,7 @@ class Resource(resource.Resource):
     @display_table(CloudFilesCredential)
     def create_cloud_files(self, username, api_key):
         """
-        Update credentials for Cloud Files access
+        Create credentials for Cloud Files access
 
         :param username: Cloud Files username
         :param api_key: Cloud Files API Key
@@ -216,6 +239,34 @@ class Resource(resource.Resource):
             CredentialResponse,
             wrapper='credentials')
         return resp.cloud_files
+
+    @command(
+        parser_options=dict(
+            description='Add credentials for Amazon S3'
+        ),
+        access_key_id=argument(help='Amazon S3 access key id'),
+        access_secret_key=argument(help='Amazon S3 access secret key')
+    )
+    @display_table(S3Credential)
+    def create_s3(self, access_key_id, access_secret_key):
+        """
+        Create credentials for Amazon S3 access
+
+        :param access_key_id: S3 access key id
+        :param access_secret_key: S3 access secret key
+        """
+        data = dict(
+            access_key_id=access_key_id,
+            access_secret_key=access_secret_key,
+        )
+        request_data = self._marshal_request(
+            data, CreateS3Request, wrapper='s3')
+
+        resp = self._parse_response(
+            self._client._post('credentials/s3', json=request_data),
+            CredentialResponse,
+            wrapper='credentials')
+        return resp.s3
 
     @command(
         parser_options=dict(
@@ -279,6 +330,36 @@ class Resource(resource.Resource):
         return resp.cloud_files
 
     @command(
+        parser_options=dict(
+            description='Update credentials for Amazon S3'
+        ),
+        access_key_id=argument(
+            help='Access Key Id for existing Amazon S3 credential'),
+        access_secret_key=argument(help='Amazon S3 Access Secret Key')
+    )
+    @display_table(S3Credential)
+    def update_s3(self, access_key_id, access_secret_key):
+        """
+        Update credentials for Amazon S3 access
+
+        :param access_key_id: S3 access key id
+        :param access_secret_key: S3 access secret Key
+        """
+        data = dict(
+            access_key_id=access_key_id,
+            access_secret_key=access_secret_key)
+        request_data = self._marshal_request(
+            data, CreateS3Request, wrapper='s3')
+
+        resp = self._parse_response(
+            self._client._put(
+                'credentials/s3/{0}'.format(access_key_id),
+                json=request_data),
+            CredentialResponse,
+            wrapper='credentials')
+        return resp.s3
+
+    @command(
         parser_options=dict(description='Delete an SSH key'),
         name=argument(help='SSH key name')
     )
@@ -301,3 +382,15 @@ class Resource(resource.Resource):
         :param username: Cloud Files username
         """
         self._client._delete('credentials/cloud_files/{0}'.format(username))
+
+    @command(
+        parser_options=dict(description='Delete Amazon S3 credential'),
+        name=argument(help='Amazon S3 access key id')
+    )
+    def delete_s3(self, access_key_id):
+        """
+        Delete Amazon s3 credential
+
+        :param access_key_id: S3 access key id
+        """
+        self._client._delete('credentials/s3/{0}'.format(access_key_id))
