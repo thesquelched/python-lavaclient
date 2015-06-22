@@ -50,7 +50,7 @@ class Resource(resource.Resource):
         """
         List all flavors
 
-        :returns: list of Flavor objects
+        :returns: List of :class:`~lavaclient.api.response.Flavor` objects
         """
         return self._parse_response(
             self._client._get('/flavors'),

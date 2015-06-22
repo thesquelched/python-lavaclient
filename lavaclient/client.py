@@ -10,6 +10,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+"""
+Lava client setup and authentication
+"""
+
 import logging
 import six
 import re
@@ -33,8 +37,24 @@ LOG.addHandler(NullHandler())
 
 
 class Lava(object):
+    """
+    Lava(username, region=None, password=None, token=None, api_key=None, \
+auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
 
-    """Lava API Client"""
+    CloudBigData API client. Creating an instance will automatically attempt to
+    authenticate.
+
+    :param username: Rackspace username
+    :param region: Region identifier, e.g. 'DFW'
+    :param api_key: API key string
+    :param token: API token from previous authentication
+    :param password: Keystone auth password
+    :param auth_url: Override Keystone authentication url; typically left at
+                     the default
+    :param tenant_id: Rackspace tenant ID
+    :param endpoint: CloudBigData endpoint URL; usually discovered
+                     automatically with a valid `region`
+    """
 
     def __init__(self,
                  username,
@@ -47,20 +67,6 @@ class Lava(object):
                  endpoint=None,
                  verify_ssl=None,
                  _enable_cli=False):
-        """
-        Create a Lava API client using your API key and username.
-        Authentication is handled via Keystone.
-
-        :param username: Username string
-        :param region: Region identifier, e.g. 'DFW'
-        :param api_key: API key string (optional)
-        :param token: API token from previous authentication (optional); must
-                      be specified alongside `endpoint`
-        :param password: Keystone auth password (optional)
-        :param auth_url: Override Keystone authentication url (optional)
-        :param tenant_id: Your Rackspace tenant ID (optional)
-        :param endpoint: Override Cloud Big Data endpoint URL (optional)
-        """
         if not any((api_key, password, token)):
             raise error.InvalidError("One of api_key, token, or password is "
                                      "required")
@@ -93,12 +99,12 @@ class Lava(object):
             if username is None:
                 raise error.InvalidError("Missing username")
 
-            self._auth = self.authenticate(auth_url,
-                                           api_key,
-                                           region,
-                                           username,
-                                           password,
-                                           tenant_id)
+            self._auth = self._authenticate(auth_url,
+                                            api_key,
+                                            region,
+                                            username,
+                                            password,
+                                            tenant_id)
 
         if endpoint is None:
             self._endpoint = self._get_endpoint(region, tenant_id)
@@ -152,8 +158,8 @@ class Lava(object):
                          exc_info=exc)
             raise error.InvalidError(str(exc))
 
-    def authenticate(self, auth_url, api_key, region, username, password,
-                     tenant_id):
+    def _authenticate(self, auth_url, api_key, region, username, password,
+                      tenant_id):
         """Return keystone authentication client"""
         try:
             return keystone.Client(
@@ -172,7 +178,7 @@ class Lava(object):
             raise error.AuthorizationError(
                 'Authorization error: {0}'.format(exc))
 
-    def _reauthenticate(self):
+    def reauthenticate(self):
         """Reauthenticate with keystone, assuming our token is no longer
         valid"""
         if self._token:
@@ -183,22 +189,26 @@ class Lava(object):
             LOG.info('Reauthenticating via keystone')
 
             old_token = self.token
-            self._auth = self.authenticate(self._auth_url,
-                                           self._api_key,
-                                           self._region,
-                                           self._username,
-                                           self._password,
-                                           self._tenant_id)
+            self._auth = self._authenticate(self._auth_url,
+                                            self._api_key,
+                                            self._region,
+                                            self._username,
+                                            self._password,
+                                            self._tenant_id)
 
             if self.token == old_token:
                 LOG.warn('Reauthentication produced the same token')
 
     @property
     def token(self):
+        """Authentication token; may be passed as `token` option to
+        :class:`Lava`"""
         return self._token or self._auth.auth_token
 
     @property
     def endpoint(self):
+        """CloudBigData endpoint; may be passed as `endpoint` option to
+        :class:`Lava`"""
         return self._endpoint.rstrip('/')
 
     ######################################################################
@@ -254,7 +264,7 @@ class Lava(object):
                 six.raise_from(error.RequestError(msg), exc)
 
             if reauthenticate:
-                self._reauthenticate()
+                self.reauthenticate()
                 return self._request(method, path, reauthenticate=False,
                                      **kwargs)
 

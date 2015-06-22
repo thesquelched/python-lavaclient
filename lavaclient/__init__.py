@@ -10,11 +10,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+"""
+Rackspace CloudBigData API bindings
+"""
+
 import logging
 
 from lavaclient import _version
 from lavaclient.client import Lava
 from lavaclient.log import NullHandler
+from lavaclient.error import (
+    LavaError, InvalidError, AuthenticationError, AuthorizationError,
+    RequestError, ApiError, FailedError, TimeoutError, NotFoundError,
+    ProxyError)
 
 
 __version_info__ = _version.__version_info__
@@ -25,4 +33,6 @@ LOG = logging.getLogger(__name__)
 LOG.addHandler(NullHandler())
 
 
-__all__ = ['Lava']
+__all__ = ['Lava', 'LavaError', 'InvalidError', 'AuthenticationError',
+           'AuthorizationError', 'RequestError', 'ApiError', 'FailedError',
+           'TimeoutError', 'NotFoundError', 'ProxyError']

@@ -38,6 +38,7 @@ def create_client(args):
                           os.environ.get('LAVA_API_KEY'),
                           os.environ.get('OS_API_KEY'))
     token = first_exists(args.token,
+                         os.environ.get('LAVA_AUTH_TOKEN'),
                          os.environ.get('AUTH_TOKEN'))
     user = first_exists(args.user,
                         os.environ.get('LAVA_USERNAME'),

@@ -1,7 +1,7 @@
 import pytest
 from mock import patch
 
-from lavaclient.api import limits
+from lavaclient.api.response import Limit, AbsoluteLimit
 from lavaclient import error
 
 
@@ -10,7 +10,7 @@ def test_get(lavaclient, limits_response):
         request.return_value = limits_response
         resp = lavaclient.limits.get()
 
-        assert isinstance(resp, limits.Limit)
+        assert isinstance(resp, Limit)
 
     with patch.object(lavaclient, '_request') as request:
         request.return_value = {}
@@ -18,5 +18,5 @@ def test_get(lavaclient, limits_response):
 
 
 def test_limit_repr(absolute_limit):
-    alimit = limits.AbsoluteLimit(absolute_limit)
+    alimit = AbsoluteLimit(absolute_limit)
     assert repr(alimit) == 'AbsoluteLimit(limit=10, remaining=0)'

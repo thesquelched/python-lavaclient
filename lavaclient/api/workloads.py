@@ -86,7 +86,7 @@ def display_recommendations(data):
             chain(textwrap.wrap(rec.description, 30), repeat('')),
             rec.sizes)
 
-        rows.extend((name, requires, desc, size.flavor, size.minutes,
+        rows.extend((name, requires, desc, size.flavor_id, size.minutes,
                      size.nodecount, size.recommended)
                     for name, requires, desc, size in items)
 
@@ -108,7 +108,7 @@ class Resource(resource.Resource):
         """
         Get list of Lava workloads
 
-        :returns: List of Workload objects
+        :returns: List of :class:`~lavaclient.api.response.Workload` objects
         """
         return self._parse_response(
             self._client._get('/workloads'),
@@ -135,7 +135,8 @@ class Resource(resource.Resource):
             - 'data': persistent (large) data storage is required
             - 'all': persist data and your cluster servers
             - 'none': your data and clusters are ephemeral
-        :returns: List of Recommendation objects
+        :returns: List of :class:`~lavaclient.api.response.Recommendations`
+                  objects
         """
         params = self._marshal_request({'storagesize': storage_size,
                                         'persistent': persistence},

@@ -10,6 +10,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Get information about available Hadoop platform distributions, e.g.
+Hortonworks Data Platform
+"""
+
 import six
 import logging
 from figgis import Config, ListField, Field
@@ -55,7 +60,7 @@ class Resource(resource.Resource):
         """
         List all distros
 
-        :returns: list of Distro objects
+        :returns: list of :class:`~lavaclient.api.response.Distro` objects
         """
         return self._parse_response(
             self._client._get('/distros'),
@@ -69,6 +74,9 @@ class Resource(resource.Resource):
     def get(self, distro_id):
         """
         Get a specific distro
+
+        :param distro_id: Distribution ID
+        :returns: :class:`~lavaclient.api.response.DistroDetail`
         """
         return self._parse_response(
             self._client._get('/distros/{0}'.format(distro_id)),

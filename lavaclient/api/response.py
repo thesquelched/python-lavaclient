@@ -14,12 +14,14 @@ import logging
 import subprocess
 import textwrap
 import six
+from itertools import chain
 from figgis import Config, Field, ListField
 from dateutil.parser import parse as dateparse
 from datetime import datetime
 
 from lavaclient.validators import Length, Range
-from lavaclient.util import display_result, prettify, _prettify, ssh_to_host
+from lavaclient.util import (display_result, prettify, _prettify, ssh_to_host,
+                             print_table)
 from lavaclient.log import NullHandler
 from lavaclient import error
 
@@ -36,36 +38,60 @@ def DateTime(value):
     return dateparse(value)
 
 
-class IdReprMixin(object):
+class ReprMixin(object):
+    """Defines a standard __repr__ method for response objects"""
 
     def __repr__(self):
-        return "{0}(id='{1}')".format(self.__class__.__name__, self.id)
+        properties = set(
+            key for key, value in six.iteritems(self.__class__.__dict__)
+            if not key.startswith('_') and isinstance(value, property))
+
+        # 'id' and 'name' always go at the front of the list
+        ordered = []
+        for key in ('id', 'name'):
+            if key in properties:
+                ordered.append("{0}='{1}'".format(key, self.get(key)))
+                properties.remove(key)
+
+        # Next come any other id's
+        ids = []
+        for key in list(properties):
+            if key.endswith('_id'):
+                ids.append(key)
+                properties.remove(key)
+
+        ordered.extend(sorted(ids))
+        ordered.extend(sorted(properties))
+
+        return '{0}({1})'.format(self.__class__.__name__, ', '.join(ordered))
 
 
-class Link(Config):
+######################################################################
+# Reponse objects
+######################################################################
+
+class Link(Config, ReprMixin):
 
     rel = Field(six.text_type, required=True)
     href = Field(six.text_type, required=True)
 
-    def __repr__(self):
-        return "Link(rel='{0}', href='{1}')".format(
-            self.rel, self.href)
 
-
-class Address(Config):
+class Address(Config, ReprMixin):
 
     address = Field(six.text_type, required=True, key='addr')
     version = Field(six.text_type, required=True)
 
 
-class Addresses(Config):
+class Addresses(Config, ReprMixin):
 
-    public = ListField(Address, required=True)
-    private = ListField(Address, required=True)
+    public = ListField(Address, required=True,
+                       help='See: :class:`Address`')
+    private = ListField(Address, required=True,
+                        help='See: :class:`Address`')
 
 
 @prettify('components')
-class Node(Config, IdReprMixin):
+class Node(Config, ReprMixin):
     table_columns = ('id', 'name', 'node_group', 'status',
                      'public_ip', 'private_ip', '_components')
     table_header = ('ID', 'Name', 'Role', 'Status', 'Public IP',
@@ -73,16 +99,25 @@ class Node(Config, IdReprMixin):
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
-    created = Field(DateTime, required=True)
-    updated = Field(DateTime, required=True)
+    created = Field(DateTime, required=True,
+                    help=':py:class:`~datetime.datetime` corresponding to '
+                         'creation date')
+    updated = Field(DateTime, required=True,
+                    help=':py:class:`~datetime.datetime` corresponding to '
+                         'date last updated')
     status = Field(six.text_type, required=True)
     flavor_id = Field(six.text_type, required=True)
-    addresses = Field(Addresses, required=True)
-    node_group = Field(six.text_type, required=True)
-    components = ListField(dict, required=True)
+    addresses = Field(Addresses, required=True,
+                      help='Public and private IP addresses; See: '
+                           ':class:`Addresses`')
+    node_group = Field(six.text_type, required=True, help='Node group ID')
+    components = ListField(dict, required=True,
+                           help='Components installed on this node, e.g. '
+                                '`HiveClient`')
 
     @property
     def private_ip(self):
+        """Private IP address on service network"""
         try:
             return self.addresses.private[0].address
         except IndexError:
@@ -90,6 +125,7 @@ class Node(Config, IdReprMixin):
 
     @property
     def public_ip(self):
+        """Public IP address"""
         try:
             return self.addresses.public[0].address
         except IndexError:
@@ -125,7 +161,8 @@ class Node(Config, IdReprMixin):
 
 
 @prettify('components')
-class NodeGroup(Config, IdReprMixin):
+class NodeGroup(Config, ReprMixin):
+    """Group of nodes that share the same flavor and installed services"""
 
     table_columns = ('id', 'flavor_id', 'count', '_components')
     table_header = ('ID', 'Flavor', 'Count', 'Components')
@@ -137,7 +174,7 @@ class NodeGroup(Config, IdReprMixin):
     components = ListField(dict, default={})
 
 
-class ClusterScript(Config):
+class ClusterScript(Config, ReprMixin):
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
@@ -148,13 +185,15 @@ class BaseCluster(object):
 
     @property
     def nodes(self):
+        """See: :meth:`~lavaclient.api.clusters.Resource.nodes`"""
         return self._client.clusters.nodes(self.id)
 
     def refresh(self):
         """
         Refresh the cluster. If this object was returned from
-        :meth:`Lava.clusters.list`, it will return the same amount of detail
-        as :meth:`Lava.clusters.get`.
+        :meth:`~lavaclient.api.clusters.Resource.list`, it will return the
+        same amount of detail as
+        :meth:`~lavaclient.api.clusters.Resource.get`.
 
         :returns: :class:`ClusterDetail`
         """
@@ -168,7 +207,10 @@ class BaseCluster(object):
 
     def wait(self, **kwargs):
         """
-        Wait for this cluster to become active
+        wait(timeout=None, interval=None)
+
+        Wait for this cluster to become active. See:
+        :meth:`~lavaclient.api.clusters.Resource.wait`
 
         :returns: :class:`ClusterDetail`
         """
@@ -176,36 +218,48 @@ class BaseCluster(object):
 
     def ssh_proxy(self, **kwargs):
         """
+        ssh_proxy(port=None, node_name=None, ssh_command=None, wait=False)
+
         Start a SOCKS5 proxy over SSH to this cluster. See
-        :meth:`Lava.clusters.wait`.
+        :meth:`~lavaclient.api.clusters.Resource.ssh_proxy`.
         """
         return self._client.clusters.ssh_proxy(self.id, **kwargs)
 
     def execute_on_node(self, node_name, command, **kwargs):
         """
+        execute_on_node(node_name, command, ssh_command=None, wait=False)
+
         Execute a command on a cluster node. See:
-        :meth:`Lava.clusters.ssh_execute`.
+        :meth:`~lavaclient.api.clusters.Resource.ssh_execute`.
         """
         return self._client.clusters.ssh_execute(self.id, node_name, command,
                                                  **kwargs)
 
 
-class Cluster(Config, IdReprMixin, BaseCluster):
+class Cluster(Config, ReprMixin, BaseCluster):
+
+    """Basic cluster information"""
 
     table_columns = ('id', 'name', 'status', 'stack_id', 'created')
     table_header = ('ID', 'Name', 'Status', 'Stack', 'Created')
 
     id = Field(six.text_type, required=True)
-    created = Field(DateTime, required=True)
-    updated = Field(DateTime, required=True)
+    created = Field(DateTime, required=True,
+                    help=':py:class:`~datetime.datetime` corresponding to '
+                         'creation date')
+    updated = Field(DateTime, required=True,
+                    help=':py:class:`~datetime.datetime` corresponding to '
+                         'date last updated')
     name = Field(six.text_type, required=True)
     status = Field(six.text_type, required=True)
     stack_id = Field(six.text_type, required=True)
-    cbd_version = Field(int, required=True)
+    cbd_version = Field(int, required=True,
+                        help='API version at which cluster was created')
     links = ListField(Link, required=True)
 
 
-class ClusterDetail(Config, IdReprMixin, BaseCluster):
+class ClusterDetail(Config, ReprMixin, BaseCluster):
+    """Detailed cluster information"""
 
     __inherits__ = [Cluster]
 
@@ -214,9 +268,11 @@ class ClusterDetail(Config, IdReprMixin, BaseCluster):
     table_header = ('ID', 'Name', 'Status', 'Stack', 'Created', 'CBD Version',
                     'Username', 'Progress')
 
-    node_groups = ListField(NodeGroup, required=True)
+    node_groups = ListField(NodeGroup, required=True,
+                            help='See: :class:`NodeGroup`')
     username = Field(six.text_type, required=True)
-    scripts = ListField(ClusterScript, required=True)
+    scripts = ListField(ClusterScript, required=True,
+                        help='See: :class:`ClusterScript`')
     progress = Field(float, required=True)
 
     def display(self):
@@ -231,7 +287,7 @@ class ClusterDetail(Config, IdReprMixin, BaseCluster):
             display_result(self.scripts, ClusterScript, title='Scripts')
 
 
-class Flavor(Config, IdReprMixin):
+class Flavor(Config, ReprMixin):
 
     table_columns = ('id', 'name', 'ram', 'vcpus', 'disk')
     table_header = ('ID', 'Name', 'RAM', 'VCPUs', 'Disk')
@@ -244,19 +300,19 @@ class Flavor(Config, IdReprMixin):
     links = ListField(Link, required=True)
 
 
-class ServiceComponent(Config):
+class ServiceComponent(Config, ReprMixin):
 
     name = Field(six.text_type, required=True)
     mode = Field(six.text_type)
 
 
-class DistroServiceMode(Config):
+class DistroServiceMode(Config, ReprMixin):
 
     name = Field(six.text_type, required=True)
 
 
 @prettify('components')
-class DistroService(Config):
+class DistroService(Config, ReprMixin):
 
     table_columns = ('name', 'version', '_components', '_description')
     table_header = ('Name', 'Version', 'Components', 'Description')
@@ -271,7 +327,7 @@ class DistroService(Config):
         return '\n'.join(textwrap.wrap(self.description, 30))
 
 
-class ResourceLimits(Config):
+class ResourceLimits(Config, ReprMixin):
 
     max_count = Field(int, required=True)
     min_count = Field(int, required=True)
@@ -279,7 +335,7 @@ class ResourceLimits(Config):
 
 
 @prettify('components', 'resource_limits')
-class StackNodeGroup(Config, IdReprMixin):
+class StackNodeGroup(Config, ReprMixin):
 
     table_columns = ('id', 'flavor_id', 'count', 'resource_limits.min_ram',
                      'resource_limits.min_count',
@@ -289,12 +345,13 @@ class StackNodeGroup(Config, IdReprMixin):
 
     id = Field(six.text_type, required=True)
     flavor_id = Field(six.text_type, required=True)
-    resource_limits = Field(ResourceLimits, required=True)
+    resource_limits = Field(ResourceLimits, required=True,
+                            help='See: :class:`ResourceLimits`')
     count = Field(int, required=True)
     components = ListField(dict, required=True)
 
 
-class StackService(Config):
+class StackService(Config, ReprMixin):
 
     name = Field(six.text_type, required=True)
     modes = ListField(six.text_type, required=True)
@@ -305,8 +362,8 @@ class BaseStack(object):
     def refresh(self):
         """
         Refresh this stack. If this object was returned from
-        :meth:`Lava.stacks.list`, it will return the same amount of detail as
-        :meth:`Lava.stacks.get`.
+        :meth:`~lavaclient.api.stacks.Resource.list`, it will be converted
+        into :class:`StackDetail`
 
         :returns: :class:`StackDetail`
         """
@@ -320,7 +377,7 @@ class BaseStack(object):
 
 
 @prettify('services')
-class Stack(Config, IdReprMixin, BaseStack):
+class Stack(Config, ReprMixin, BaseStack):
 
     table_columns = ('id', 'name', 'distro', '_description', '_services')
     table_header = ('ID', 'Name', 'Distro', 'Description', 'Services')
@@ -329,8 +386,9 @@ class Stack(Config, IdReprMixin, BaseStack):
     name = Field(six.text_type, required=True)
     description = Field(six.text_type)
     links = ListField(Link, required=True)
-    distro = Field(six.text_type, required=True)
-    services = ListField(StackService, required=True)
+    distro = Field(six.text_type, required=True, help='Distribution ID')
+    services = ListField(StackService, required=True,
+                         help='See: :class:`StackService`')
 
     @property
     def _description(self):
@@ -338,7 +396,7 @@ class Stack(Config, IdReprMixin, BaseStack):
 
 
 @prettify('node_groups')
-class StackDetail(Stack, IdReprMixin, BaseStack):
+class StackDetail(Stack, ReprMixin, BaseStack):
 
     __inherits__ = [Stack]
 
@@ -347,8 +405,11 @@ class StackDetail(Stack, IdReprMixin, BaseStack):
     table_header = ('ID', 'Name', 'Distro', 'Created', 'Description',
                     'Services', 'Node Groups')
 
-    created = Field(DateTime, required=True)
-    node_groups = ListField(StackNodeGroup, required=True)
+    created = Field(DateTime, required=True,
+                    help=':py:class:`~datetime.datetime` corresponding to '
+                         'creation date')
+    node_groups = ListField(StackNodeGroup, required=True,
+                            help='See: :class:`StackNodeGroup`')
 
     def display(self):
         display_result(self, StackDetail, title='Stack')
@@ -362,7 +423,7 @@ class StackDetail(Stack, IdReprMixin, BaseStack):
         return _prettify([group.id for group in self.node_groups])
 
 
-class Distro(Config, IdReprMixin):
+class Distro(Config, ReprMixin):
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
@@ -370,14 +431,15 @@ class Distro(Config, IdReprMixin):
 
 
 @prettify('services')
-class DistroDetail(Config, IdReprMixin):
+class DistroDetail(Config, ReprMixin):
 
     table_columns = ('id', 'name', 'version')
     table_header = ('ID', 'Name', 'Version')
 
     __inherits__ = [Distro]
 
-    services = ListField(DistroService, required=True)
+    services = ListField(DistroService, required=True,
+                         help='See: :class:`DistroService`')
 
     def display(self):
         display_result(self, DistroDetail, title='Distro')
@@ -385,7 +447,7 @@ class DistroDetail(Config, IdReprMixin):
         display_result(self.services, DistroService, 'Services')
 
 
-class Script(Config, IdReprMixin):
+class Script(Config, ReprMixin):
 
     table_columns = ('id', 'name', 'type', 'is_public', 'created', 'url')
     table_header = ('ID', 'Name', 'Type', 'Public', 'Created', 'URL')
@@ -395,24 +457,30 @@ class Script(Config, IdReprMixin):
     type = Field(six.text_type, required=True)
     url = Field(six.text_type, required=True)
     is_public = Field(bool, required=True)
-    created = Field(DateTime, required=True)
-    updated = Field(DateTime, required=True)
+    created = Field(DateTime, required=True,
+                    help=':py:class:`~datetime.datetime` corresponding to '
+                         'creation date')
+    updated = Field(DateTime, required=True,
+                    help=':py:class:`~datetime.datetime` corresponding to '
+                         'date last updated')
     links = ListField(Link, required=True)
 
     def update(self, **kwargs):
         """
-        Update this script. See :meth:`Lava.scripts.update`.
+        Update this script. See
+        :meth:`~lavaclient.api.scripts.Resource.update`.
         """
         return self._client.scripts.update(self.id, **kwargs)
 
     def delete(self):
         """
-        Delete this script.
+        Delete this script. See
+        :meth:`~lavaclient.api.scripts.Resource.delete`.
         """
         return self._client.scripts.delete(self.id)
 
 
-class Workload(Config):
+class Workload(Config, ReprMixin):
 
     table_columns = ('id', 'name', 'caption', '_description')
     table_header = ('ID', 'Name', 'Caption', 'Description')
@@ -428,46 +496,49 @@ class Workload(Config):
 
     def recommendations(self, *args):
         """
+        recommendations(storage_size, persistence)
+
         Get recommendations for this workload. See
-        :meth:`Lava.workloads.recommendations`.
+        :meth:`~lavaclient.api.workloads.Resource.recommendations`.
         """
         return self._client.workloads.recommendations(self.id, *args)
 
 
-class Size(Config):
+class Size(Config, ReprMixin):
 
     table_columns = ('flavor', 'minutes', 'nodecount', 'recommended')
     table_header = ('Flavor', 'Minutes', 'Nodes', 'Recommended')
 
-    flavor = Field(six.text_type, required=True)
+    flavor_id = Field(six.text_type, required=True, key='flavor')
     minutes = Field(float, required=True)
     nodecount = Field(int, required=True)
     recommended = Field(bool, default=False)
 
 
 @prettify('requires')
-class Recommendations(Config):
+class Recommendations(Config, ReprMixin):
 
     """Recommendations on how to use the Lava API for a given workload"""
 
     name = Field(six.text_type, required=True)
     description = Field(six.text_type, required=True)
     requires = ListField(six.text_type, required=True)
-    sizes = ListField(Size, required=True)
+    sizes = ListField(Size, required=True,
+                      help='See: :class:`Size`')
 
     @property
     def _description(self):
         return '\n'.join(textwrap.wrap(self.description, 30))
 
 
-class CredentialType(Config):
+class CredentialType(Config, ReprMixin):
 
     type = Field(six.text_type, required=True)
     schema = Field(dict, required=True)
     links = ListField(Link, required=True)
 
 
-class SSHKey(Config):
+class SSHKey(Config, ReprMixin):
 
     table_columns = ('type', 'name')
     table_header = ('Type', 'Name')
@@ -480,7 +551,7 @@ class SSHKey(Config):
         self._client.credentials.delete_ssh_key(self.name)
 
 
-class CloudFilesCredential(Config):
+class CloudFilesCredential(Config, ReprMixin):
 
     table_columns = ('type', 'username')
     table_header = ('Type', 'Username')
@@ -504,3 +575,58 @@ class S3Credential(Config):
     def delete(self):
         """Delete s3 credential"""
         self.__client.credentials.delete_s3(self.access_key_id)
+
+
+class Credentials(Config):
+
+    cloud_files = ListField(CloudFilesCredential)
+    ssh_keys = ListField(SSHKey)
+    s3 = ListField(S3Credential)
+
+    def display(self):
+        data = chain(
+            [('SSH Key', key.name) for key in self.ssh_keys],
+            [('Cloud Files', cred.username) for cred in self.cloud_files],
+            [('Amazon S3', cred.access_key_id) for cred in self.s3]
+        )
+        print_table(data, ('Type', 'Name'))
+
+
+class AbsoluteLimit(Config):
+
+    limit = Field(int, required=True)
+    remaining = Field(int, required=True)
+
+    def __repr__(self):
+        return 'AbsoluteLimit(limit={0}, remaining={1})'.format(
+            self.limit, self.remaining)
+
+
+class AbsoluteLimits(Config):
+
+    node_count = Field(AbsoluteLimit, required=True,
+                       help='See: :class:`AbsoluteLimit`')
+    ram = Field(AbsoluteLimit, required=True,
+                help='See: :class:`AbsoluteLimit`')
+    disk = Field(AbsoluteLimit, required=True,
+                 help='See: :class:`AbsoluteLimit`')
+    vcpus = Field(AbsoluteLimit, required=True,
+                  help='See: :class:`AbsoluteLimit`')
+
+
+class Limit(Config):
+
+    absolute = Field(AbsoluteLimits, required=True,
+                     help='See: :class:`AbsoluteLimits`')
+
+    def display(self):
+        data = self.absolute
+
+        properties = [
+            ('Nodes', data.node_count.limit, data.node_count.remaining),
+            ('RAM', data.ram.limit, data.ram.remaining),
+            ('Disk', data.disk.limit, data.disk.remaining),
+            ('VCPUs', data.vcpus.limit, data.vcpus.remaining),
+        ]
+        header = ('Property', 'Limit', 'Remaining')
+        print_table(properties, header, title='Quotas')

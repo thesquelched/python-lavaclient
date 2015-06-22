@@ -79,7 +79,7 @@ class Resource(resource.Resource):
         """
         List scripts that belong to the tenant specified in the client
 
-        :returns: List of Script objects
+        :returns: List of :class:`~lavaclient.api.response.Script` objects
         """
         return self._parse_response(
             self._client._get('scripts'),
@@ -104,7 +104,7 @@ class Resource(resource.Resource):
         :param name: Script name
         :param url: The URL from which the script may be downloaded
         :param script_type: Script type; currently, must be 'post_init'
-        :returns: Same as :func:`get`
+        :returns: :class:`~lavaclient.api.response.Script`
         """
         data = dict(
             name=name,
@@ -139,7 +139,7 @@ class Resource(resource.Resource):
         :param name: Script name
         :param url: The URL from which the script may be downloaded
         :param script_type: Script type; currently, must be 'post_init'
-        :returns: Same as :func:`get`
+        :returns: :class:`~lavaclient.api.response.Script`
         """
         params = [('name', name),
                   ('url', url),

@@ -10,6 +10,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Create, destroy, and otherwise interact with Rackspace CloudBigData clusters
+"""
+
 import itertools
 import argparse
 import re
@@ -23,7 +27,7 @@ from datetime import datetime, timedelta
 from figgis import Config, ListField, Field, PropertyError, ValidationError
 
 from lavaclient.api import resource
-from lavaclient.api.response import Cluster, ClusterDetail, Node
+from lavaclient.api.response import Cluster, ClusterDetail, Node, ReprMixin
 from lavaclient import error
 from lavaclient.validators import Length, Range, List
 from lavaclient.util import (CommandLine, argument, command, display_table,
@@ -48,6 +52,7 @@ DEFAULT_SSH_KEY = '{0}@{1}'.format(getuser(), socket.gethostname())
 
 
 def natural_number(value):
+    """Argparse type to force a non-negative integer value"""
     intval = int(value)
     if intval < 0:
         raise argparse.ArgumentTypeError('Must be a non-negative integer')
@@ -59,14 +64,14 @@ def natural_number(value):
 # API Responses
 ######################################################################
 
-class ClustersResponse(Config):
+class ClustersResponse(Config, ReprMixin):
 
     """Response from /clusters"""
 
     clusters = ListField(Cluster, required=True)
 
 
-class ClusterResponse(Config):
+class ClusterResponse(Config, ReprMixin):
 
     """Response from /clusters/<cluster_id>"""
 
@@ -146,6 +151,8 @@ class ClusterUpdateRequest(Config):
 ######################################################################
 
 def parse_node_group(value):
+    """Parse command-line node group string, e.g.
+    `slave(count=1, flavor_id=hadoop1-7)`"""
     var_rgx = r'(?:[a-zA-Z-]\w*)'
     expr_rgx = r'(?:{var}\s*=\s*.*?)'.format(var=var_rgx)
     node_group_rgx = r'({var})(?:\(({expr}?(?:\s*,\s*{expr})*)\))?$'.format(
@@ -183,6 +190,7 @@ def elapsed_minutes(start):
 
 
 def parse_connector(value):
+    """Parse command-line connector string, e.g. `cloud_files=my_files`"""
     match = re.match(r'([A-Za-z]\w*)=([A-Za-z]\w*)$', value)
     if not match:
         raise argparse.ArgumentTypeError('Must be in the form of type=name')
@@ -192,8 +200,9 @@ def parse_connector(value):
 
 @six.add_metaclass(CommandLine)
 class Resource(resource.Resource):
-
-    """Clusters API methods"""
+    """
+    Clusters API methods
+    """
 
     @command(
         parser_options=dict(
@@ -205,7 +214,7 @@ class Resource(resource.Resource):
         """
         List clusters that belong to the tenant specified in the client
 
-        :returns: List of Cluster objects
+        :returns: List of :class:`~lavaclient.api.response.Cluster` objects
         """
         return self._parse_response(
             self._client._get('clusters'),
@@ -223,7 +232,7 @@ class Resource(resource.Resource):
         Get the cluster corresponding to the cluster ID
 
         :param cluster_id: Cluster ID
-        :returns: Cluster object
+        :returns: :class:`~lavaclient.api.response.ClusterDetail`
         """
         return self._parse_response(
             self._client._get('clusters/' + six.text_type(cluster_id)),
@@ -234,26 +243,24 @@ class Resource(resource.Resource):
                user_scripts=None, node_groups=None, connectors=None,
                wait=False):
         """
-        create(name, stack_id, username=None, ssh_keys=None,
-               user_scripts=None, node_groups=None, connectors=None,
-               wait=None)
-
         Create a cluster
 
         :param name: Cluster name
         :param stack_id: Valid stack identifier
         :param username: User to create on the cluster; defaults to local user
         :param ssh_keys: List of SSH keys; if none is specified, it will use
-                         the key '<user>@<hostname>', creating the key from
-                         $HOME/.ssh/id_rsa.pub if it doesn't exist.
-        :param node_groups: List of node groups for the cluster
-        :param user_scripts: List of user script ID's;
-                             See :meth:`Lava.scripts.create`
+                         the key `user@hostname`, creating the key from
+                         `$HOME/.ssh/id_rsa.pub` if it doesn't exist.
+        :param node_groups: List of node group dictionaries for the cluster
+                            for which you want to modify the stack defaults,
+                            e.g. the node count or the flavor
+        :param user_scripts: List of user script ID's; See
+                             :meth:`lavaclient.api.scripts.Resource.create`
         :param connectors: List of connector credentials to use. Each item
-                           must be a `dict` in the form of `{type: name}`
+                           must be a dictionary of `(type, name)` pairs
         :param wait: If `True`, wait for the cluster to become active before
                      returning
-        :returns: Same as :func:`get`
+        :returns: :class:`~lavaclient.api.response.ClusterDetail`
         """
         if ssh_keys is None:
             ssh_keys = [DEFAULT_SSH_KEY]
@@ -313,7 +320,7 @@ class Resource(resource.Resource):
 
         :param cluster_id: ID of cluster to resize
         :param node_groups: List of node groups for the cluster
-        :returns: Same as :func:`get`
+        :returns: :class:`~lavaclient.api.response.ClusterDetail`
         """
         if not node_groups:
             raise error.RequestError("Must specify atleast one node_group "
@@ -424,14 +431,14 @@ class Resource(resource.Resource):
         Delete a cluster
 
         :param cluster_id: Cluster ID
-        :returns: Same as :func:`get`
+        :returns: :class:`~lavaclient.api.response.ClusterDetail`
         """
         self._client._delete('clusters/' + six.text_type(cluster_id))
 
     @coroutine
-    def cli_wait_printer(self, start):
-        """Coroutine that runs during the wait command. Prints status to stdout if
-        the command line is running; otherwise, just log the status."""
+    def _cli_wait_printer(self, start):
+        """Coroutine that runs during the wait command. Prints status to stdout
+        if the command line is running; otherwise, just log the status."""
 
         started = False
 
@@ -470,7 +477,7 @@ class Resource(resource.Resource):
 
         :param cluster_id: Cluster ID
         :param timeout: Wait timeout in minutes (default: no timeout)
-        :returns: Same as :func:`get`
+        :returns: :class:`~lavaclient.api.response.ClusterDetail`
         """
         if interval is None:
             interval = WAIT_INTERVAL
@@ -482,7 +489,7 @@ class Resource(resource.Resource):
         start = datetime.now()
         timeout_date = start + delta
 
-        printer = self.cli_wait_printer(start)
+        printer = self._cli_wait_printer(start)
 
         while datetime.now() < timeout_date:
             cluster = self.get(cluster_id)
@@ -511,7 +518,7 @@ class Resource(resource.Resource):
         Get the cluster nodes
 
         :param cluster_id: Cluster ID
-        :returns: nodes of the cluster
+        :returns: List of :class:`~lavaclient.api.response.Node` objects
         """
         return self._client.nodes.list(cluster_id)
 
@@ -575,8 +582,8 @@ class Resource(resource.Resource):
                   ssh_command=None, wait=False):
         """
         Set up a SOCKS5 proxy over SSH to a node in the cluster. Returns the
-        SSH process (via :class:`Popen`), which can be stopped via the
-        :func:`kill` method.
+        SSH process (via :py:class:`~subprocess.Popen`), which can be
+        stopped via the :func:`kill` method.
 
         :param cluster_id: Cluster ID
         :param port: Local port on which to create the proxy (default: 12345)
@@ -584,7 +591,8 @@ class Resource(resource.Resource):
                           default, use first available node.
         :param wait: If `True`, wait for the cluster to become active before
                      creating the proxy
-        :returns: :class:`Popen` object representing the SSH connection.
+        :returns: :py:class:`~subprocess.Popen` object representing the SSH
+                  connection.
         """
         if port is None:
             port = 12345

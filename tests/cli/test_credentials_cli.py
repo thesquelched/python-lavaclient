@@ -4,7 +4,7 @@ from lavaclient.cli import main
 
 
 @patch('sys.argv', ['lava', 'credentials', 'list'])
-@patch('lavaclient.api.credentials.print_table')
+@patch('lavaclient.api.response.print_table')
 def test_list(print_table_, mock_client, credentials_response):
     mock_client._request.return_value = credentials_response
     main()

@@ -6,7 +6,7 @@ from lavaclient import client
 
 @pytest.fixture
 def lavaclient():
-    with patch.object(client.Lava, 'authenticate') as auth:
+    with patch.object(client.Lava, '_authenticate') as auth:
         auth.return_value = MagicMock(
             auth_token='auth_token',
             service_catalog=MagicMock(

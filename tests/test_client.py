@@ -68,7 +68,7 @@ def test_headers(uuid4, lavaclient):
 
 
 def test_reauthenticate(lavaclient):
-    lavaclient.authenticate = MagicMock(
+    lavaclient._authenticate = MagicMock(
         return_value=MagicMock(
             auth_token='auth_token',
             service_catalog=MagicMock(
@@ -97,7 +97,7 @@ def test_reauthenticate(lavaclient):
 
 
 def test_reauthenticate_failure(lavaclient):
-    lavaclient.authenticate = MagicMock(
+    lavaclient._authenticate = MagicMock(
         return_value=MagicMock(
             auth_token='auth_token',
             service_catalog=MagicMock(

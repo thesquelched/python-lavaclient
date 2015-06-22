@@ -160,7 +160,7 @@ class Resource(resource.Resource):
         """
         List all stacks
 
-        :returns: list of Stack objects
+        :returns: List of :class:`~lavaclient.api.response.Stack` objects
         """
         return self._parse_response(
             self._client._get('stacks'),
@@ -175,7 +175,8 @@ class Resource(resource.Resource):
         """
         Get a specific stack
 
-        :returns: A Stack object
+        :param stack_id: Stack ID
+        :returns: :class:`~lavaclient.api.response.StackDetail`
         """
         return self._parse_response(
             self._client._get('stacks/{0}'.format(stack_id)),
@@ -210,7 +211,7 @@ class Resource(resource.Resource):
         :param services: List of services. Each should have a name and
                          optionally a list of modes
         :param node_groups: List of node groups for the cluster
-        :returns: Same as :func:`get`
+        :returns: :class:`~lavaclient.api.response.StackDetail`
         """
         data = dict(
             name=name,
@@ -236,5 +237,7 @@ class Resource(resource.Resource):
     def delete(self, stack_id):
         """
         Delete a stack
+
+        :param stack_id: Stack ID
         """
         self._client._delete('stacks/{0}'.format(stack_id))

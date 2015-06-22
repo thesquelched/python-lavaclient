@@ -37,7 +37,7 @@ class Resource(resource.Resource):
         """
         List clusters that belong to the tenant specified in the client
 
-        :returns: List of Node objects
+        :returns: List of :class:`~lavaclient.api.response.Node` objects
         """
         return self._parse_response(
             self._client._get('clusters/{0}/nodes'.format(cluster_id)),

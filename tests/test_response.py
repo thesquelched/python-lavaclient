@@ -29,18 +29,11 @@ def test_cluster(cluster_response):
     assert cluster.stack_id == 'stack_id'
 
 
-def test_cluster_repr(cluster_response):
-    cluster = response.Cluster(cluster_response)
-    assert repr(cluster) == "Cluster(id='cluster_id')"
-
-
 def test_link(link_response):
     link = response.Link(link_response)
 
     assert link.rel == 'rel'
     assert link.href == 'href'
-
-    assert repr(link) == "Link(rel='rel', href='href')"
 
 
 def test_flavors(flavor):

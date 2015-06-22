@@ -10,17 +10,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+"""
+Credential management, e.g. SSH keys, Cloud Files
+"""
+
 import six
 import logging
-from itertools import chain
 from figgis import Config, ListField, Field
 
 from lavaclient.api import resource
-from lavaclient.api.response import (CloudFilesCredential, SSHKey,
+from lavaclient.api.response import (Credentials, CloudFilesCredential, SSHKey,
                                      S3Credential, CredentialType)
 from lavaclient.validators import Length
 from lavaclient.util import (CommandLine, argument, command, display_table,
-                             file_or_string, print_table)
+                             file_or_string)
 from lavaclient.log import NullHandler
 
 
@@ -31,21 +34,6 @@ LOG.addHandler(NullHandler())
 ######################################################################
 # API Responses
 ######################################################################
-
-class Credentials(Config):
-
-    cloud_files = ListField(CloudFilesCredential)
-    ssh_keys = ListField(SSHKey)
-    s3 = ListField(S3Credential)
-
-    def display(self):
-        data = chain(
-            [('SSH Key', key.name) for key in self.ssh_keys],
-            [('Cloud Files', cred.username) for cred in self.cloud_files],
-            [('Amazon S3', cred.access_key_id) for cred in self.s3]
-        )
-        print_table(data, ('Type', 'Name'))
-
 
 class Credential(Config):
 
@@ -109,12 +97,6 @@ class Resource(resource.Resource):
     """Credentials API methods"""
 
     def _list(self, type=None):
-        """
-        List credentials that belong to the tenant specified in the client
-
-        :param type: Type of credentials to list (defaults to all credentials)
-        :returns: List of Credentials objects
-        """
         url = 'credentials/' + type if type else 'credentials'
         resp = self._parse_response(
             self._client._get(url),
@@ -130,6 +112,9 @@ class Resource(resource.Resource):
     def list(self):
         """
         List all credentials belonging to the tenant
+
+        :returns: List of :class:`~lavaclient.api.response.Credentials`
+                  objects
         """
         return self._list()
 
