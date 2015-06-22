@@ -170,37 +170,46 @@ def initialize_logging(args):  # pragma: nocover
 
 
 def parse_argv():
-    parser_base = argparse.ArgumentParser(add_help=False)
-    general = parser_base.add_argument_group('General Options')
-    general.add_argument('--token',
-                         help='Lava API authentication token')
-    general.add_argument('--api-key', dest='lava_api_key',
-                         help='Lava API key')
-    general.add_argument('--region',
-                         help='API region, e.g. DFW')
-    general.add_argument('--tenant',
-                         help='Tenand ID')
-    general.add_argument('--version',
-                         help='Print client version')
-    general.add_argument('--debug', '-d', action='store_true',
-                         help='Print debugging information')
-    general.add_argument('--endpoint',
-                         help='API endpoint URL')
-    general.add_argument('--auth-url',
-                         help='Keystone endpoint URL')
-    general.add_argument('--headless', action='store_true',
-                         help='Do not request user input')
-    general.add_argument('--user',
-                         help='Keystone auth username')
-    general.add_argument('--password',
-                         help='Keystone auth password')
-    general.add_argument('--insecure', '-k', action='store_false',
-                         dest='verify_ssl',
-                         default=not os.environ.get('LAVA_INSECURE'),
-                         help='Turn of SSL cert validation')
-    general.set_defaults(enable_cli=True)
+    # Suppress setting attributes on the namespace from subparser options if
+    # they are not specified, which allows us to have the same general options
+    # on all parsers/subparsers, making their order not matter.
+    parser_base = argparse.ArgumentParser(add_help=False,
+                                          argument_default=argparse.SUPPRESS)
+    parser = argparse.ArgumentParser(prog='lava')
 
-    parser = argparse.ArgumentParser(prog='lava', parents=[parser_base])
+    for prs in (parser_base, parser):
+        general = prs.add_argument_group('General Options')
+        general.add_argument('--token',
+                             help='Lava API authentication token')
+        general.add_argument('--api-key', dest='lava_api_key',
+                             help='Lava API key')
+        general.add_argument('--region',
+                             help='API region, e.g. DFW')
+        general.add_argument('--tenant',
+                             help='Tenand ID')
+        general.add_argument('--version',
+                             help='Print client version')
+        general.add_argument('--debug', '-d', action='store_true',
+                             help='Print debugging information')
+        general.add_argument('--endpoint',
+                             help='API endpoint URL')
+        general.add_argument('--auth-url',
+                             help='Keystone endpoint URL')
+        general.add_argument('--headless', action='store_true',
+                             help='Do not request user input')
+        general.add_argument('--user',
+                             help='Keystone auth username')
+        general.add_argument('--password',
+                             help='Keystone auth password')
+        general.add_argument('--insecure', '-k', action='store_false',
+                             dest='verify_ssl',
+                             help='Turn of SSL cert validation')
+
+    # Ugly hack; add defaults only to main parser so as to not override values
+    # via child parsers
+    parser.set_defaults(enable_cli=True,
+                        verify_ssl=not os.environ.get('LAVA_INSECURE'))
+
     subparsers = parser.add_subparsers(title='Commands')
 
     for command, func in COMMAND_DISPATCH.items():

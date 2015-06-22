@@ -386,21 +386,23 @@ def command(*args, **kwargs):
 
     Examples:
 
+    >>> from lavaclient.api.resource import Resource
+
     >>> class MyResource(Resource):
-
-            @command(parser_options={
-                        'help: 'Get the thing',
-                        'epilog': 'Some additional help text at the end'},
-                     thing_id=argument(type=int, help='The ID for the thing'),
-                     an_option=argument('--my-option', '-m'))
-            def get_thing(self, thing_id, an_option=None)
-                # do some stuff
-                pass
-
-            @command
-            def do_something(self, name, value, some_option=None):
-                # Automatically inject all options
-                pass
+    ...
+    ...     @command(parser_options={
+    ...                 'help': 'Get the thing',
+    ...                 'epilog': 'Some additional help text at the end'},
+    ...              thing_id=argument(type=int, help='The ID for the thing'),
+    ...              an_option=argument('--my-option', '-m'))
+    ...     def get_thing(self, thing_id, an_option=None):
+    ...         # do some stuff
+    ...         pass
+    ...
+    ...     @command
+    ...     def do_something(self, name, value, some_option=None):
+    ...         # Automatically inject all options
+    ...         pass
     """
     FORBIDDEN_KEYS = frozenset(['parents', 'formatter_class'])
 
