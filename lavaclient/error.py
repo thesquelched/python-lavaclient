@@ -31,7 +31,12 @@ class AuthorizationError(LavaError):
 
 
 class RequestError(LavaError):
-    pass
+    """Represents a transient request error (e.g. timeout, host not found) or a
+    good request that returned 4xx or 5xx"""
+
+    def __init__(self, msg, code=None):
+        super(RequestError, self).__init__(msg)
+        self.code = code
 
 
 class ApiError(LavaError):

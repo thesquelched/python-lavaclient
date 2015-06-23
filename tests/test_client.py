@@ -131,7 +131,14 @@ def test_http_error(request, lavaclient):
         )
     )
 
-    pytest.raises(error.RequestError, lavaclient._get, 'path')
+    try:
+        lavaclient._get('path')
+    except error.RequestError as exc:
+        exception = exc
+    else:
+        pytest.fail('Did not catch RequestError')
+
+    assert exception.code == requests.codes.internal_server_error
 
 
 @patch('requests.request')

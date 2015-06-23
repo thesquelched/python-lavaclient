@@ -261,7 +261,9 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
                 except (KeyError, ValueError):
                     msg = exc.response.text or str(exc)
 
-                six.raise_from(error.RequestError(msg), exc)
+                six.raise_from(
+                    error.RequestError(msg, code=exc.response.status_code),
+                    exc)
 
             if reauthenticate:
                 self.reauthenticate()
