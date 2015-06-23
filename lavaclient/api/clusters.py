@@ -22,6 +22,7 @@ import logging
 import time
 import sys
 import socket
+import os.path
 from getpass import getuser
 from datetime import datetime, timedelta
 from figgis import Config, ListField, Field, PropertyError, ValidationError
@@ -31,7 +32,7 @@ from lavaclient.api.response import Cluster, ClusterDetail, Node, ReprMixin
 from lavaclient import error
 from lavaclient.validators import Length, Range, List
 from lavaclient.util import (CommandLine, argument, command, display_table,
-                             coroutine, create_socks_proxy, expand)
+                             coroutine, create_socks_proxy, expand, confirm)
 from lavaclient.log import NullHandler
 
 
@@ -49,6 +50,7 @@ FINAL_STATES = frozenset(['ACTIVE', 'ERROR'])
 INVALID_USERNAMES = frozenset(['root'])
 
 DEFAULT_SSH_KEY = '{0}@{1}'.format(getuser(), socket.gethostname())
+DEFAULT_SSH_PUBKEY = os.path.join('$HOME', '.ssh', 'id_rsa.pub')
 
 
 def natural_number(value):
@@ -372,6 +374,25 @@ class Resource(resource.Resource):
 
         return cluster
 
+    def _create_default_ssh_credential(self):
+        if not confirm('You have not uploaded any SSH key credentials; do '
+                       'you want to upload {0} now?'.format(
+                           DEFAULT_SSH_PUBKEY)):
+            sys.exit(1)
+
+        try:
+            with open(expand(DEFAULT_SSH_PUBKEY)) as f:
+                six.print_('SSH key does not exist; creating...')
+                self._client.credentials.create_ssh_key(
+                    DEFAULT_SSH_KEY,
+                    f.read().strip())
+        except IOError:
+            six.print_('No SSH keypair found; to generate a keypair, run '
+                       '`ssh-keygen`')
+            sys.exit(1)
+
+        return DEFAULT_SSH_KEY
+
     @command(
         parser_options=dict(
             description='Create a new Lava cluster',
@@ -427,21 +448,17 @@ class Resource(resource.Resource):
             return self.create(name, stack_id, username, ssh_keys,
                                user_scripts, node_groups, connectors, wait)
         except error.RequestError as exc:
-            if not (ssh_keys == [DEFAULT_SSH_KEY] and
+            if self._args.headless or not (
+                    ssh_keys == [DEFAULT_SSH_KEY] and
                     'Cannot find requested ssh_keys' in str(exc)):
                 raise
 
-            six.print_('SSH key does not exist; creating...')
+        # Create the SSH key for the user and then attempt to create the
+        # cluster again
+        self._create_default_ssh_credential()
 
-            # Create the SSH key for the user and then attempt to create the
-            # cluster again
-            with open(expand('$HOME/.ssh/id_rsa.pub')) as f:
-                self._client.credentials.create_ssh_key(
-                    DEFAULT_SSH_KEY,
-                    f.read().strip())
-
-            return self.create(name, stack_id, username, ssh_keys,
-                               user_scripts, node_groups, connectors, wait)
+        return self.create(name, stack_id, username, ssh_keys,
+                           user_scripts, node_groups, connectors, wait)
 
     @command(
         parser_options=dict(

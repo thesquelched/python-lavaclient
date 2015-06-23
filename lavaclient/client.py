@@ -66,7 +66,7 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
                  tenant_id=None,
                  endpoint=None,
                  verify_ssl=None,
-                 _enable_cli=False):
+                 _cli_args=None):
         if not any((api_key, password, token)):
             raise error.InvalidError("One of api_key, token, or password is "
                                      "required")
@@ -112,16 +112,15 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
             self._endpoint = self._validate_endpoint(endpoint, tenant_id)
 
         # Initialize API resources
-        self.clusters = clusters.Resource(self, command_line=_enable_cli)
-        self.limits = limits.Resource(self, command_line=_enable_cli)
-        self.flavors = flavors.Resource(self, command_line=_enable_cli)
-        self.stacks = stacks.Resource(self, command_line=_enable_cli)
-        self.distros = distros.Resource(self, command_line=_enable_cli)
-        self.workloads = workloads.Resource(self, command_line=_enable_cli)
-        self.scripts = scripts.Resource(self, command_line=_enable_cli)
-        self.nodes = nodes.Resource(self, command_line=_enable_cli)
-        self.credentials = credentials.Resource(self,
-                                                command_line=_enable_cli)
+        self.clusters = clusters.Resource(self, cli_args=_cli_args)
+        self.limits = limits.Resource(self, cli_args=_cli_args)
+        self.flavors = flavors.Resource(self, cli_args=_cli_args)
+        self.stacks = stacks.Resource(self, cli_args=_cli_args)
+        self.distros = distros.Resource(self, cli_args=_cli_args)
+        self.workloads = workloads.Resource(self, cli_args=_cli_args)
+        self.scripts = scripts.Resource(self, cli_args=_cli_args)
+        self.nodes = nodes.Resource(self, cli_args=_cli_args)
+        self.credentials = credentials.Resource(self, cli_args=_cli_args)
 
         self._auth_lock = Lock()
 

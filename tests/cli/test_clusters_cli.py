@@ -97,16 +97,37 @@ def mock_keyfile(*args, **kwargs):
 @pytest.mark.usefixtures('print_table', 'print_single_table')
 @patch('sys.argv', ['lava', 'clusters', 'create', 'name', 'stack_id'])
 @patch('lavaclient.api.clusters.open', mock_keyfile, create=True)
-def test_create_no_ssh_key(mock_client, cluster_response, ssh_key_response):
+@patch('lavaclient.api.clusters.confirm')
+def test_create_no_ssh_key(confirm, mock_client, cluster_response,
+                           ssh_key_response):
     mock_client._request.side_effect = [
         RequestError('Cannot find requested ssh_keys: {0}'.format(
             [DEFAULT_SSH_KEY])),
         ssh_key_response,
         cluster_response,
     ]
+    confirm.return_value = True
 
-    main()
+    with patch.object(mock_client.clusters._args, 'headless', False):
+        main()
+
+    assert confirm.called
     assert mock_client._request.call_count == 3
+
+
+@pytest.mark.usefixtures('print_table', 'print_single_table')
+@patch('sys.argv', ['lava', 'clusters', 'create', 'name', 'stack_id'])
+@patch('lavaclient.api.clusters.open', mock_keyfile, create=True)
+def test_create_no_ssh_key_headless(mock_client, cluster_response,
+                                    ssh_key_response):
+    mock_client._request.side_effect = [
+        RequestError('Cannot find requested ssh_keys: {0}'.format(
+            [DEFAULT_SSH_KEY])),
+    ]
+
+    pytest.raises(Exception, main)
+
+    assert mock_client._request.call_count == 1
 
 
 @pytest.mark.usefixtures('print_table', 'print_single_table')

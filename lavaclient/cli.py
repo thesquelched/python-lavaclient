@@ -75,7 +75,7 @@ def create_client(args):
                                   os.environ.get('LAVA2_API_URL'),
                                   os.environ.get('LAVA_API_URL')),
             verify_ssl=args.verify_ssl,
-            _enable_cli=args.enable_cli)
+            _cli_args=args)
     except LavaError as exc:
         six.print_('Error during authentication: {0}'.format(exc),
                    file=sys.stderr)
