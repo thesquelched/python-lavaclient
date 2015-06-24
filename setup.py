@@ -64,6 +64,7 @@ if __name__ == '__main__':
         version=read_version(),
         description='Client library for Rackspace Cloud Big Data API',
         long_description=long_description(changelog),
+        license='Apache',
 
         author='Rackspace',
         url='https://github.com/rackerlabs/python-lavaclient',
