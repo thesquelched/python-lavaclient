@@ -60,7 +60,7 @@ if __name__ == '__main__':
         changelog = ''
 
     setup(
-        name='python-lavaclient',
+        name='lavaclient',
         version=read_version(),
         description='Client library for Rackspace Cloud Big Data API',
         long_description=long_description(changelog),
