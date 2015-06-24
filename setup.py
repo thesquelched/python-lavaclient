@@ -42,8 +42,9 @@ def download_url():
 
 def long_description(changelog):
     return """\
-[Package Documentation](http://python-lavaclient.readthedocs.org/en/latest)
-[GitHub README](https://github.com/rackerlabs/python-lavaclient)
+`Package Documentation <http://python-lavaclient.readthedocs.org/en/latest>`_
+
+`GitHub README <https://github.com/rackerlabs/python-lavaclient>`_
 
 Changelog
 ---------
