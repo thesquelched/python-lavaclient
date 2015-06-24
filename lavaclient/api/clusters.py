@@ -239,6 +239,18 @@ class Resource(resource.Resource):
             ClusterResponse,
             wrapper='cluster')
 
+    def _gather_node_groups(self, node_groups):
+        """Transform node_groups into a list of dicts"""
+        if isinstance(node_groups, dict):
+            node_group_list = []
+            for key, node_group in six.iteritems(node_groups):
+                node_group.update(id=key)
+                node_group_list.append(node_group)
+
+            return node_group_list
+        else:
+            return node_groups
+
     def create(self, name, stack_id, username=None, ssh_keys=None,
                user_scripts=None, node_groups=None, connectors=None,
                wait=False):
@@ -251,9 +263,11 @@ class Resource(resource.Resource):
         :param ssh_keys: List of SSH keys; if none is specified, it will use
                          the key `user@hostname`, creating the key from
                          `$HOME/.ssh/id_rsa.pub` if it doesn't exist.
-        :param node_groups: List of node group dictionaries for the cluster
-                            for which you want to modify the stack defaults,
-                            e.g. the node count or the flavor
+        :param node_groups: `dict` of `(node_group_id, attrs)` pairs, in which
+                            `attrs` is a `dict` of node group attributes.
+                            Instead of a `dict`, you may give a `list` of
+                            `dicts`, each containing the `id` key. Currently
+                            supported attributes are `flavor_id` and `count`
         :param user_scripts: List of user script ID's; See
                              :meth:`lavaclient.api.scripts.Resource.create`
         :param connectors: List of connector credentials to use. Each item
@@ -273,10 +287,13 @@ class Resource(resource.Resource):
             ssh_keys=ssh_keys,
             stack_id=stack_id
         )
+
         if node_groups:
-            data.update(node_groups=node_groups)
+            data.update(node_groups=self._gather_node_groups(node_groups))
+
         if user_scripts:
             data.update(scripts=[{'id': script} for script in user_scripts])
+
         if connectors:
             cdata = []
             for connector in connectors:
@@ -318,22 +335,27 @@ class Resource(resource.Resource):
         """
         Resize a cluster
 
-        :param cluster_id: ID of cluster to resize
-        :param node_groups: List of node groups for the cluster
+        :param cluster_id: Cluster ID
+        :param node_groups: `dict` of `(node_group_id, attrs)` pairs, in which
+                            `attrs` is a `dict` of node group attributes.
+                            Instead of a `dict`, you may give a `list` of
+                            `dicts`, each containing the `id` key. Currently
+                            supported attributes are `flavor_id` and `count`
         :returns: :class:`~lavaclient.api.response.ClusterDetail`
         """
         if not node_groups:
             raise error.RequestError("Must specify atleast one node_group "
                                      "to resize")
 
-        if not all(sorted(node_group.keys()) == sorted(['count', 'id'])
-                   for node_group in node_groups):
+        gathered = self._gather_node_groups(node_groups)
+        if not all('count' in node_group and 'id' in node_group
+                   for node_group in gathered):
             raise error.RequestError("Invalid or missing option "
                                      "in the node groups")
 
         data = dict(
             cluster=dict(
-                node_groups=node_groups
+                node_groups=gathered
             )
         )
 
