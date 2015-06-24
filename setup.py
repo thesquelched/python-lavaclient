@@ -15,17 +15,9 @@ from setuptools import setup, find_packages
 import os.path
 
 
-REQUIREMENTS_TXT = os.path.join(
+CHANGELOG_PATH = os.path.join(
     os.path.abspath(os.path.dirname(__file__)),
-    'requirements.txt')
-
-
-def requirements():
-    try:
-        with open(REQUIREMENTS_TXT) as f:
-            return f.readlines()
-    except IOError:
-        return []
+    'CHANGELOG.md')
 
 
 def read_version():
@@ -41,21 +33,52 @@ def read_version():
         return locals()['__version__']
 
 
+def download_url():
+    return (
+        'https://github.com/rackerlabs/python-lavaclient/tarball/' +
+        read_version()
+    )
+
+
+def long_description(changelog):
+    return """\
+[Package Documentation](http://python-lavaclient.readthedocs.org/en/latest)
+[GitHub README](https://github.com/rackerlabs/python-lavaclient)
+
+Changelog
+---------
+
+{changelog}
+""".format(changelog=changelog)
+
+
 if __name__ == '__main__':
+    try:
+        with open(CHANGELOG_PATH) as f:
+            changelog = f.read().strip()
+    except IOError:
+        changelog = ''
+
     setup(
         name='python-lavaclient',
         version=read_version(),
-        author='Rackspace',
         description='Client library for Rackspace Cloud Big Data API',
+        long_description=long_description(changelog),
+
+        author='Rackspace',
+        url='https://github.com/rackerlabs/python-lavaclient',
+        download_url=download_url(),
 
         packages=find_packages(exclude=['tests']),
-
+        entry_points={
+            'console_scripts': ['lava = lavaclient.cli:main'],
+        },
         install_requires=[
             'python-keystoneclient>=1.3.0',
             'requests>=2.5.1',
             'six>=1.9.0',
             'python-dateutil>=2.4.2',
-            'figgis>=1.6.0',
+            'figgis>=1.6.2',
             'PySocks>=1.5.4',
         ],
 
@@ -67,7 +90,4 @@ if __name__ == '__main__':
             "Operating System :: OS Independent",
             "Programming Language :: Python"
         ],
-        entry_points={
-            'console_scripts': ['lava = lavaclient.cli:main'],
-        },
     )
