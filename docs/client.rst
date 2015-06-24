@@ -5,7 +5,8 @@ Lava Client
 
 .. currentmodule:: lavaclient
 
-The :class:`Lava` client gives you access to the CloudBigData AP
+The :class:`Lava` client provides access to all public CloudBigData API
+methods.
 
 
 Authentication
