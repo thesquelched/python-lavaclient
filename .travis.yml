@@ -12,16 +12,6 @@ install:
   - pip install -r requirements.txt
   - pip install -r test-requirements.txt
 
-deploy:
-  provider: pypi
-  user: rax_cbd_dev
-  password:
-    secure: "oRMIZvDkJq6pT3vi+WslnfW4tMwVvG1/rmnkcvzzUVkRdbKxDsPaKmS028W56gKqOwb3ax5te21gK0bA+HCHzh5lR9xGTGA/P4M1i68s9j00DMQQtwUTGXZDSzhkoVj0+ImKeSpWsFqScU1JfgEZwoLMNSCniDPWgL29XId2lUkrthfeVqodvRAWLXsY+L5pjdP/DRJd3Y/e2hbT9owvMt2r3qWErO1y6qa9vy2ch0J1Ag+YLFsVD09pTmHCOsIutt21fvEpRwF9/2qbOp0QO0LbI93JD0YO4iYHzRERYRv5vtejxGf0X1ibdgLGw78PMyky0HYZIc+h9TNjXFNy4Cku/fZa10t0l7k+KEsmN9viL8Ybxf9zaGpVmAtJkOfQzTP4zElQJkpI0QhJ6TZKXFKXzunQANadCFG7LhzSkB+2pqNBqHvFJo/G/vA4Se5HI5c0azzdDIC2FKN5PL9QfS6c4Tg2kVeuph1R9DKVcxQY9MfQPi6g7pmtHta1CeZOZgeDZDPXgkf/egQnZkDvasaKGJKfKvZrmGs8gSkU0HrGmKiup3EfZnRMFfOjgiXkcsmGpSTg2Xsrg2ZfciO+q4QfqLyTyUtzy8lf8ns7EhW1Ri+WMnzX+tbjnF6GZFlOP4XNBjxmNGQerCREh2mPpwDBH7H7K7VC1a2X4i4D6JE="
-  on:
-    tags: true
-    repo: rackerlabs/python-lavaclient
-  distributions: "sdist bdist_wheel"
-
 python:
   - "3.4"
 
