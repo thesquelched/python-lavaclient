@@ -11,7 +11,7 @@
 # under the License.
 
 """
-Rackspace CloudBigData API bindings
+Rackspace Cloud Big Data API bindings
 """
 
 import logging

@@ -70,6 +70,8 @@ def test_get(print_table, print_single_table, mock_client, stack_response):
 ])
 def test_create(services, node_groups, print_table, print_single_table,
                 mock_client, stack_response):
+    pytest.skip('Create is not yet supported')
+
     mock_client._request.return_value = stack_response
 
     args = ['lava', 'stacks', 'create', 'name', 'distro',

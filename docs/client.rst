@@ -5,18 +5,19 @@ Lava Client
 
 .. currentmodule:: lavaclient
 
-The :class:`Lava` client gives you access to the CloudBigData AP
+The :class:`Lava` client provides access to all public Cloud Big Data API
+methods.
 
 
 Authentication
 --------------
 
-Authenticating to the CloudBigData API is similar to that of any other
+Authenticating to the Cloud Big Data API is similar to that of any other
 Rackspace product; you will need the following information:
 
 - Rackspace username
 - Tenant ID
-- CloudBigData API key
+- Cloud Big Data API key
 - Region
 
 You can get all of this information from the

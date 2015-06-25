@@ -17,8 +17,7 @@ from figgis import Config, ListField, Field
 from lavaclient.api import resource
 from lavaclient.api.response import Stack, StackDetail
 from lavaclient.validators import Length, List, Range
-from lavaclient.util import (CommandLine, command, argument, display_table,
-                             read_json)
+from lavaclient.util import CommandLine, command, display_table
 from lavaclient.log import NullHandler
 
 
@@ -183,53 +182,53 @@ class Resource(resource.Resource):
             StackResponse,
             wrapper='stack')
 
-    @command(
-        parser_options=dict(
-            description='Create a custom stack',
-            epilog=SERVICE_CREATE_EPILOG,
-        ),
-        name=argument(help='A stack identifier, e.g. MY_HADOOP_STACK'),
-        distro=argument(help='An existing distribution ID; see '
-                             '`lava distros list`'),
-        services=argument(type=read_json,
-                          help='JSON data string or path to file containing '
-                               'JSON data; see SERVICES'),
-        node_groups=argument(type=read_json,
-                             help='JSON data string or p ath to file '
-                                  'containing JSON data; see NODE GROUPS'),
-        description=argument(help='A brief description of the purpose '
-                                  'of the stack')
-    )
-    @display_table(StackDetail)
-    def create(self, name, distro, services, node_groups=None,
-               description=None):
-        """
-        Create a stack
+    # @command(
+    #     parser_options=dict(
+    #         description='Create a custom stack',
+    #         epilog=SERVICE_CREATE_EPILOG,
+    #     ),
+    #     name=argument(help='A stack identifier, e.g. MY_HADOOP_STACK'),
+    #     distro=argument(help='An existing distribution ID; see '
+    #                          '`lava distros list`'),
+    #     services=argument(type=read_json,
+    #                       help='JSON data string or path to file containing '
+    #                            'JSON data; see SERVICES'),
+    #     node_groups=argument(type=read_json,
+    #                          help='JSON data string or p ath to file '
+    #                               'containing JSON data; see NODE GROUPS'),
+    #     description=argument(help='A brief description of the purpose '
+    #                               'of the stack')
+    # )
+    # @display_table(StackDetail)
+    # def create(self, name, distro, services, node_groups=None,
+    #            description=None):
+    #     """
+    #     Create a stack
 
-        :param name: Stack name
-        :param distro: Valid distro identifier
-        :param services: List of services. Each should have a name and
-                         optionally a list of modes
-        :param node_groups: List of node groups for the cluster
-        :returns: :class:`~lavaclient.api.response.StackDetail`
-        """
-        data = dict(
-            name=name,
-            distro=distro,
-            services=services,
-        )
-        if node_groups:
-            data.update(node_groups=node_groups)
-        if description:
-            data.update(description=description)
+    #     :param name: Stack name
+    #     :param distro: Valid distro identifier
+    #     :param services: List of services. Each should have a name and
+    #                      optionally a list of modes
+    #     :param node_groups: List of node groups for the cluster
+    #     :returns: :class:`~lavaclient.api.response.StackDetail`
+    #     """
+    #     data = dict(
+    #         name=name,
+    #         distro=distro,
+    #         services=services,
+    #     )
+    #     if node_groups:
+    #         data.update(node_groups=node_groups)
+    #     if description:
+    #         data.update(description=description)
 
-        request_data = self._marshal_request(
-            data, CreateStackRequest, wrapper='stack')
+    #     request_data = self._marshal_request(
+    #         data, CreateStackRequest, wrapper='stack')
 
-        return self._parse_response(
-            self._client._post('stacks', json=request_data),
-            StackResponse,
-            wrapper='stack')
+    #     return self._parse_response(
+    #         self._client._post('stacks', json=request_data),
+    #         StackResponse,
+    #         wrapper='stack')
 
     @command(parser_options=dict(
         description='Delete a custom stack',

@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-python-lavaclient - Rackspace CloudBigData Bindings
-===================================================
+python-lavaclient - Rackspace Cloud Big Data Bindings
+=====================================================
 
 Contents:
 
