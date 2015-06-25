@@ -113,7 +113,7 @@ class Resource(resource.Resource):
         """
         List all credentials belonging to the tenant
 
-        :returns: List of :class:`~lavaclient.api.response.Credentials`
+        :returns: List of :class:`Credentials`
                   objects
         """
         return self._list()
@@ -126,7 +126,7 @@ class Resource(resource.Resource):
         """
         List all SSH keys
 
-        :returns: List of SSHKey objects
+        :returns: List of :class:`SSHKey` objects
         """
         return self._list(type='ssh_keys')
 
@@ -138,7 +138,7 @@ class Resource(resource.Resource):
         """
         List all Cloud Files credentials
 
-        :returns: List of CloudFilesCredential objects
+        :returns: List of :class:`CloudFilesCredential` objects
         """
         return self._list(type='cloud_files')
 
@@ -150,7 +150,7 @@ class Resource(resource.Resource):
         """
         List all Amazon S3 credentials
 
-        :returns: List of S3Credential objects
+        :returns: List of :class:`S3Credential` objects
         """
         return self._list(type='s3')
 
@@ -172,7 +172,6 @@ class Resource(resource.Resource):
         name=argument(metavar='<name>',
                       help='Name to associate with the key'),
         public_key=argument(
-            type=file_or_string,
             help='SSH public key; must be either a file containing the '
                  'public key or the plaintext public key itself.')
     )
@@ -182,11 +181,12 @@ class Resource(resource.Resource):
         Upload an SSH public key for cluster logins
 
         :param name: The name to associate to the public key
-        :param public_key: SSH public key in plaintext
+        :param public_key: SSH public key in plaintext or path to key file
+        :returns: :class:`SSHKey`
         """
         data = dict(
             key_name=name,
-            public_key=public_key,
+            public_key=file_or_string(public_key),
         )
         request_data = self._marshal_request(data, CreateSSHKeyRequest,
                                              wrapper='ssh_keys')
@@ -211,6 +211,7 @@ class Resource(resource.Resource):
 
         :param username: Cloud Files username
         :param api_key: Cloud Files API Key
+        :returns: :class:`CloudFilesCredential`
         """
         data = dict(
             username=username,
@@ -239,6 +240,7 @@ class Resource(resource.Resource):
 
         :param access_key_id: S3 access key id
         :param access_secret_key: S3 access secret key
+        :returns: :class:`S3Credential`
         """
         data = dict(
             access_key_id=access_key_id,
@@ -259,7 +261,6 @@ class Resource(resource.Resource):
         ),
         name=argument(metavar='<name>', help='Name of existing SSH key'),
         public_key=argument(
-            type=file_or_string,
             help='SSH public key; must be either a file containing the '
                  'public key or the plaintext public key itself.')
     )
@@ -269,11 +270,11 @@ class Resource(resource.Resource):
         Upload an SSH public key for cluster logins
 
         :param name: The name of an existing SSH key
-        :param new_name: The name to associate to the public key
-        :param public_key: SSH public key in plaintext
+        :param public_key: SSH public key in plaintext or path to key file
+        :returns: :class:`SSHKey`
         """
         data = dict(key_name=name,
-                    public_key=public_key)
+                    public_key=file_or_string(public_key))
         request_data = self._marshal_request(data, CreateSSHKeyRequest,
                                              wrapper='ssh_keys')
 
@@ -299,6 +300,7 @@ class Resource(resource.Resource):
 
         :param username: Cloud Files username
         :param api_key: Cloud Files API Key
+        :returns: :class:`CloudFilesCredential`
         """
         data = dict(
             username=username,
@@ -329,6 +331,7 @@ class Resource(resource.Resource):
 
         :param access_key_id: S3 access key id
         :param access_secret_key: S3 access secret Key
+        :returns: :class:`S3Credential`
         """
         data = dict(
             access_key_id=access_key_id,
