@@ -294,9 +294,9 @@ class Flavor(Config, ReprMixin):
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
-    disk = Field(int, required=True)
+    disk = Field(int, required=True, help='Disk space in MB')
     vcpus = Field(int, required=True)
-    ram = Field(int, required=True)
+    ram = Field(int, required=True, help='Memory in MB')
     links = ListField(Link, required=True)
 
 
