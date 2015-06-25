@@ -12,6 +12,15 @@ install:
   - pip install -r requirements.txt
   - pip install -r test-requirements.txt
 
+deploy:
+  provider: pypi
+  user: rax_cbd_dev
+  password:
+    secure: XpcQuTNptV2pnCpZymANjqqS4MyvddV5m+caNg4fdQk1LBSEGyI1yc6ORKNh+GbebExfpEGARcRmac5L2l08YNjMoQyVnW/aovMMgEc+FtEb/6ENShi2hfoTRiADTKBxtokTnsZbBfrEcGyKpAwzVuNM+lmMNlLkwtUOrWR7mlHiAtY75EafCbYWgFilISuXSfCc0ddHvzkkFLC8Q+bq7CCO9JCg89RFrfHvChG/kgAJivWaT1OHv4fVWGah3RJm4H6g4HvmawsebbOb2XhiEwAFAZKoEFkl8uw+scCATFtGO1x9EYZQyOPkbH56gmge10qDh+enAFsF0g3zX1A+GB3ghEhZLJgzD5DPd4G6ytpb40/Y50yEE0WEGzvciG5LRIJgkp5o/mzzOGPJbQLlC90PGzClpro3KMJEo5ZpEy0nNnJ3oxFjr7bI6cjYIN54N8UvJahVrcaqPjau05VmHRhzdHVez+Bq6JXRTbKM6jADgGy3qgfSVJti7Ocu2c4nGw82Mcep8VgAtL7Rm6i+Fh0+r32kqsahPoieHFzpBJoMpNLTSyfpaXwfif7lsnmpJD4a5KYPXdR2Q2gVack70oFckYw8NmKwWqekYiZ4WfHB5Ust/btuAC80AweFUK2yG/Wammx9xg6HuLTJZsNpp44ODKjf47phR1Fu8JL856A=
+  on:
+    tags: true
+  distributions: "sdist bdist_wheel"
+
 python:
   - "3.4"
 
