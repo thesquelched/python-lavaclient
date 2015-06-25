@@ -683,3 +683,21 @@ def ssh_to_host(username, host, ssh_command=None, command=None):
         raise error.FailedError(msg)
 
     return output
+
+
+def confirm(message, default_yes=False):
+    """Present the user with a y/n choice. Returns True if the choice is `y`"""
+    choices = 'Y/n' if default_yes else 'y/N'
+
+    while True:
+        resp = six.moves.input('{0} [{1}] '.format(message, choices)).lower()
+
+        if not resp:
+            resp = 'y' if default_yes else 'n'
+
+        if resp in ('y', 'n'):
+            break
+
+        six.print_('Invalid selection: {0}'.format(resp))
+
+    return resp == 'y'

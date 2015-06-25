@@ -1,5 +1,5 @@
 import pytest
-from mock import patch, MagicMock
+from mock import patch, MagicMock, Mock
 
 from lavaclient.client import Lava
 from lavaclient.cli import initialize_logging
@@ -15,7 +15,8 @@ def mock_client(request):
         'username',
         endpoint='http://dfw.bigdata.api.rackspacecloud.com/v2',
         token='token',
-        tenant_id=12345)
+        tenant_id=12345,
+        _cli_args=Mock(headless=True))
 
     client._request = MagicMock()
 
