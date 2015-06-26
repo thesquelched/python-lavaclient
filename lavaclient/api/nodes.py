@@ -35,7 +35,7 @@ class Resource(resource.Resource):
     @display_table(Node)
     def list(self, cluster_id):
         """
-        List clusters that belong to the tenant specified in the client
+        List nodes belonging to the cluster.
 
         :returns: List of :class:`~lavaclient.api.response.Node` objects
         """

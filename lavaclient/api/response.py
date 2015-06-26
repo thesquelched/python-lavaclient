@@ -138,6 +138,8 @@ class Node(Config, ReprMixin):
 
         :param username: Login user
         :param command: Command to execute remotely
+        :param ssh_command: ssh command string or `list`, e.g.
+                            `ssh -F configfile`
         :returns: Output from running command, if a command was specified
         """
         try:
@@ -155,6 +157,8 @@ class Node(Config, ReprMixin):
 
         :param username: Login user
         :param command: Command to execute remotely
+        :param ssh_command: ssh command string or `list`, e.g.
+                            `ssh -F configfile`
         :returns: Output from running command
         """
         return self._ssh(username, command=command, ssh_command=ssh_command)
