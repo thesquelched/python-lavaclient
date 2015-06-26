@@ -369,11 +369,11 @@ class BaseStack(object):
         """
         return self._client.stacks.get(self.id)
 
-    def delete(self):
-        """
-        Delete this stack.
-        """
-        return self._client.stacks.delete(self.id)
+    # def delete(self):
+    #     """
+    #     Delete this stack.
+    #     """
+    #     return self._client.stacks.delete(self.id)
 
 
 @prettify('services')

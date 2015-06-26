@@ -230,13 +230,13 @@ class Resource(resource.Resource):
     #         StackResponse,
     #         wrapper='stack')
 
-    @command(parser_options=dict(
-        description='Delete a custom stack',
-    ))
-    def delete(self, stack_id):
-        """
-        Delete a stack
+    # @command(parser_options=dict(
+    #     description='Delete a custom stack',
+    # ))
+    # def delete(self, stack_id):
+    #     """
+    #     Delete a stack
 
-        :param stack_id: Stack ID
-        """
-        self._client._delete('stacks/{0}'.format(stack_id))
+    #     :param stack_id: Stack ID
+    #     """
+    #     self._client._delete('stacks/{0}'.format(stack_id))

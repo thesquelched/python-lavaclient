@@ -111,6 +111,8 @@ def test_create(services, node_groups, print_table, print_single_table,
 
 @patch('sys.argv', ['lava', 'stacks', 'delete', 'stack_id'])
 def test_delete(mock_client):
+    pytest.skip('Delete is not yet supported')
+
     main()
     args = mock_client._request.call_args[0]
 
