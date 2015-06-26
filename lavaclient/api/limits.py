@@ -17,7 +17,7 @@ from figgis import Config, Field
 from lavaclient.api import resource
 from lavaclient.util import CommandLine, command, display_table
 from lavaclient.log import NullHandler
-from lavaclient.api.response import Limit
+from lavaclient.api.response import AbsoluteLimits, Limit
 
 
 LOG = logging.getLogger(__name__)
@@ -47,12 +47,15 @@ class Resource(resource.Resource):
     @command(parser_options=dict(
         description='Get resource limits for the authenticated user',
     ))
-    @display_table(Limit)
+    @display_table(AbsoluteLimits)
     def get(self):
         """
         Get resource limits for the tenant.
+
+        :returns: :class:`AbsoluteLimits`
         """
-        return self._parse_response(
+        resp = self._parse_response(
             self._client._get('/limits'),
             LimitsResponse,
             wrapper='limits')
+        return resp.absolute

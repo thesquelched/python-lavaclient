@@ -607,17 +607,17 @@ class Credentials(Config):
         print_table(data, ('Type', 'Name'))
 
 
-class AbsoluteLimit(Config):
+class AbsoluteLimit(Config, ReprMixin):
 
     limit = Field(int, required=True)
     remaining = Field(int, required=True)
 
-    def __repr__(self):
-        return 'AbsoluteLimit(limit={0}, remaining={1})'.format(
-            self.limit, self.remaining)
+    @property
+    def used(self):
+        return self.limit - self.remaining
 
 
-class AbsoluteLimits(Config):
+class AbsoluteLimits(Config, ReprMixin):
 
     node_count = Field(AbsoluteLimit, required=True,
                        help='See: :class:`AbsoluteLimit`')
@@ -628,20 +628,18 @@ class AbsoluteLimits(Config):
     vcpus = Field(AbsoluteLimit, required=True,
                   help='See: :class:`AbsoluteLimit`')
 
-
-class Limit(Config):
-
-    absolute = Field(AbsoluteLimits, required=True,
-                     help='See: :class:`AbsoluteLimits`')
-
     def display(self):
-        data = self.absolute
-
         properties = [
-            ('Nodes', data.node_count.limit, data.node_count.remaining),
-            ('RAM', data.ram.limit, data.ram.remaining),
-            ('Disk', data.disk.limit, data.disk.remaining),
-            ('VCPUs', data.vcpus.limit, data.vcpus.remaining),
+            ('Nodes', self.node_count.limit, self.node_count.remaining),
+            ('RAM', self.ram.limit, self.ram.remaining),
+            ('Disk', self.disk.limit, self.disk.remaining),
+            ('VCPUs', self.vcpus.limit, self.vcpus.remaining),
         ]
         header = ('Property', 'Limit', 'Remaining')
         print_table(properties, header, title='Quotas')
+
+
+class Limit(Config, ReprMixin):
+
+    absolute = Field(AbsoluteLimits, required=True,
+                     help='See: :class:`AbsoluteLimits`')
