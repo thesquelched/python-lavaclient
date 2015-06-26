@@ -546,6 +546,11 @@ class SSHKey(Config, ReprMixin):
     type = 'SSH Key'
     name = Field(six.text_type, key='key_name', required=True)
 
+    @property
+    def id(self):
+        """Equivalent to :attr:`name`"""
+        return self.name
+
     def delete(self):
         """Delete this key"""
         self._client.credentials.delete_ssh_key(self.name)
@@ -559,6 +564,11 @@ class CloudFilesCredential(Config, ReprMixin):
     type = 'Cloud Files'
     username = Field(six.text_type, required=True)
 
+    @property
+    def id(self):
+        """Equivalent to :attr:`username`"""
+        return self.username
+
     def delete(self):
         """Delete this credential"""
         self._client.credentials.delete_cloud_files(self.username)
@@ -571,6 +581,11 @@ class S3Credential(Config):
 
     type = 'Amazon S3'
     access_key_id = Field(six.text_type, required=True)
+
+    @property
+    def id(self):
+        """Equivalent to :attr:`access_key_id`"""
+        return self.access_key_id
 
     def delete(self):
         """Delete s3 credential"""
