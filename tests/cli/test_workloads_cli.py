@@ -7,6 +7,8 @@ from lavaclient.api.workloads import Workload
 
 @pytest.fixture
 def api_print_table(request):
+    pytest.skip('Workloads is disabled for now')
+
     patcher = patch('lavaclient.api.workloads.print_table')
     request.addfinalizer(patcher.stop)
     return patcher.start()
@@ -14,6 +16,8 @@ def api_print_table(request):
 
 @patch('sys.argv', ['lava', 'workloads', 'list'])
 def test_list(print_table, mock_client, workloads_response):
+    pytest.skip('Workloads is disabled for now')
+
     mock_client._request.return_value = workloads_response
     main()
 
@@ -26,6 +30,8 @@ def test_list(print_table, mock_client, workloads_response):
 @pytest.mark.parametrize('persistence', ['all', 'data', 'none'])
 def test_recommendations(persistence, api_print_table, mock_client,
                          recommendations_response):
+    pytest.skip('Workloads is disabled for now')
+
     mock_client._request.return_value = recommendations_response
 
     with patch('sys.argv', ['lava', 'workloads', 'recommendations', 'id',

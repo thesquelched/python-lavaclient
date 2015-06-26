@@ -97,10 +97,6 @@ API Reference
 
       See: :mod:`lavaclient.api.distros`
 
-   .. attribute:: workloads
-
-      See: :mod:`lavaclient.api.workloads`
-
    .. attribute:: scripts
 
       See: :mod:`lavaclient.api.scripts`

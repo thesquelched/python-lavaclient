@@ -117,10 +117,13 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
         self.flavors = flavors.Resource(self, cli_args=_cli_args)
         self.stacks = stacks.Resource(self, cli_args=_cli_args)
         self.distros = distros.Resource(self, cli_args=_cli_args)
-        self.workloads = workloads.Resource(self, cli_args=_cli_args)
         self.scripts = scripts.Resource(self, cli_args=_cli_args)
         self.nodes = nodes.Resource(self, cli_args=_cli_args)
         self.credentials = credentials.Resource(self, cli_args=_cli_args)
+
+        # Workloads isn't terrible useful right now, but I don't want to delete
+        # it entirely. Therefore, I'll just make it private for now.
+        self._workloads = workloads.Resource(self, cli_args=_cli_args)
 
         self._auth_lock = Lock()
 
