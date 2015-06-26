@@ -22,7 +22,7 @@ usage: lava [-h] [--token TOKEN] [--api-key LAVA_API_KEY] [--region REGION]
              [--endpoint ENDPOINT] [--auth-url AUTH_URL] [--headless]
              [--user USER] [--password PASSWORD] [--insecure]
              
-             {flavors,shell,limits,credentials,authenticate,scripts,clusters,nodes,workloads,stacks,distros}
+             {flavors,shell,limits,credentials,authenticate,scripts,clusters,nodes,stacks,distros}
              ...
              
 optional arguments:
@@ -44,7 +44,7 @@ General Options:
   --insecure, -k        Turn of SSL cert validation
   
 Commands:
-  {flavors,shell,limits,credentials,authenticate,scripts,clusters,nodes,workloads,stacks,distros}
+  {flavors,shell,limits,credentials,authenticate,scripts,clusters,nodes,stacks,distros}
 ```
 
 For a list of subcommands for each command
