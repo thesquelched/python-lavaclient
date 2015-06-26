@@ -1,9 +1,28 @@
 Introduction
 ============
 
-:mod:`lavaclient` provides python bindings for the Rackspace CloudBigData API,
-as well as a command-line client, which allows you to quickly and easily manage
-your clusters.
+:mod:`lavaclient` provides Python 2.6+ bindings for the `Rackspace Cloud Big
+Data API <http://www.rackspace.com/cloud/big-data>`_, as well as an easy-to-use
+command-line client.  You can use it to create clusters, manage credentials,
+interact with individual nodes, and much more.  For example, creating a Hadoop
+cluster based on the `Hortonworks Data Platform <http://hortonworks.com/hdp>`_
+is as simple as running a single command::
+
+    $ lava --tenant <tenant> --user <user> --api-key <API key> \
+        --region dfw clusters create my_cluster HADOOP_HDP2_2 \
+        --node-groups 'slave(count=3, flavor_id=hadoop1-30)'
+
+Here's the equivalent in pure python
+
+    >>> from lavaclient import Lava
+    >>> client = Lava('myuser',
+    ...               region='dfw',
+    ...               api_key='807895ec1ec4ca255e49ccc6715bf29f',
+    ...               tenant_id=123456)
+    >>> client.clusters.create(
+    ...     'my_cluster',
+    ...     'HADOOP_HDP2_2',
+    ...     node_groups={'slave', {'count': 3, 'flavor_id': 'hadoop1-30'}})
 
 
 Supernova

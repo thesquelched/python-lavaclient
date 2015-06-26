@@ -41,8 +41,8 @@ class Lava(object):
     Lava(username, region=None, password=None, token=None, api_key=None, \
 auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
 
-    CloudBigData API client. Creating an instance will automatically attempt to
-    authenticate.
+    Cloud Big Data API client. Creating an instance will automatically attempt
+    to authenticate.
 
     :param username: Rackspace username
     :param region: Region identifier, e.g. 'DFW'
@@ -52,7 +52,7 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
     :param auth_url: Override Keystone authentication url; typically left at
                      the default
     :param tenant_id: Rackspace tenant ID
-    :param endpoint: CloudBigData endpoint URL; usually discovered
+    :param endpoint: Cloud Big Data endpoint URL; usually discovered
                      automatically with a valid `region`
     """
 
@@ -206,7 +206,7 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
 
     @property
     def endpoint(self):
-        """CloudBigData endpoint; may be passed as `endpoint` option to
+        """Cloud Big Data endpoint; may be passed as `endpoint` option to
         :class:`Lava`"""
         return self._endpoint.rstrip('/')
 

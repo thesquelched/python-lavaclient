@@ -1,7 +1,7 @@
 python-lavaclient
 =================
 
-An API client for the Rackspace CloudBigData API
+An API client for the Rackspace Cloud Big Data API
 
 ## Install
 
