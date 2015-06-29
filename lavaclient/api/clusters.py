@@ -449,8 +449,10 @@ class Resource(resource.Resource):
                                user_scripts, node_groups, connectors, wait)
         except error.RequestError as exc:
             if self._args.headless or not (
-                    ssh_keys == [DEFAULT_SSH_KEY] and
-                    'Cannot find requested ssh_keys' in str(exc)):
+                    ssh_keys == [DEFAULT_SSH_KEY] and (
+                        'Cannot find requested ssh_keys' in str(exc) or
+                        'One or more ssh_keys are invalid' in str(exc)
+                    )):
                 raise
 
         # Create the SSH key for the user and then attempt to create the

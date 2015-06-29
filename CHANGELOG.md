@@ -1,3 +1,8 @@
+0.2.3
+-----
+* Fix cluster create bug in CLI in which missing credentials are not detected
+  properly
+
 0.2.2
 -----
 * Client
