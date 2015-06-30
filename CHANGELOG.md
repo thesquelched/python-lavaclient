@@ -2,6 +2,8 @@
 -----
 * Fix cluster create bug in CLI in which missing credentials are not detected
   properly
+* Update dependencies for keystoneclient and oslo.i18n to avoid library
+  conflict issue
 
 0.2.2
 -----
