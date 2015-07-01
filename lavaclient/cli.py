@@ -186,7 +186,7 @@ def parse_argv():
         general.add_argument('--region',
                              help='API region, e.g. DFW')
         general.add_argument('--tenant',
-                             help='Tenand ID')
+                             help='Tenant ID')
         general.add_argument('--version',
                              help='Print client version')
         general.add_argument('--debug', '-d', action='store_true',
