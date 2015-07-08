@@ -17,7 +17,6 @@ Lava client setup and authentication
 import logging
 import six
 import re
-from keystoneclient import exceptions as ks_error
 import uuid
 import requests
 from threading import Lock
@@ -30,10 +29,13 @@ from lavaclient import error
 from lavaclient.log import NullHandler
 from lavaclient.api import (clusters, limits, flavors, stacks, distros,
                             workloads, scripts, nodes, credentials)
-
+from keystoneclient import exceptions as ks_error
+from keystoneclient.i18n import _
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(NullHandler())
+
+CURRENT_LAVA_VERSION = '2'
 
 
 class Lava(object):
@@ -105,11 +107,10 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
                                             username,
                                             password,
                                             tenant_id)
-
         if endpoint is None:
-            self._endpoint = self._get_endpoint(region, tenant_id)
-        else:
-            self._endpoint = self._validate_endpoint(endpoint, tenant_id)
+            endpoint = self._get_endpoint(region, tenant_id)
+
+        self._endpoint = self._validate_endpoint(endpoint, tenant_id)
 
         # Initialize API resources
         self.clusters = clusters.Resource(self, cli_args=_cli_args)
@@ -145,16 +146,80 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
 
         raise error.InvalidError('Endpoint must end with v2 or v2/<tenant_id>')
 
+    def _throw_endpoint_error(self, endpoint_type, service_name,
+                              region_name, service_type):
+
+        MSG = '{endpoint_type}s endpoint for {service_type}s service '
+
+        if service_name and region_name:
+            msg = MSG + ('named {service_name}s in {region_name}s '
+                         'region not found'
+                         ).format(endpoint_type=endpoint_type,
+                                  service_type=service_type,
+                                  service_name=service_name,
+                                  region_name=region_name)
+        elif service_name:
+            msg = MSG + 'named {service_name}s not found'.format(
+                endpoint_type=endpoint_type, service_type=service_type,
+                service_name=service_name)
+        elif region_name:
+            msg = MSG + 'in (region_name)s region not found'.format(
+                endpoint_type=endpoint_type, service_type=service_type,
+                region_name=region_name)
+        else:
+            msg = MSG + 'not found'.format(endpoint_type=endpoint_type,
+                                           service_type=service_type)
+        raise ks_error.EndpointNotFound(_(msg))
+
+    def _filter_current_endpoint(self, service_catalog, service_type,
+                                 region_name, service_name,
+                                 endpoint_type='publicURL',
+                                 filter_attr=None,
+                                 filter_value=None):
+        """
+            Helper method to filter latest version of cloudBigData public URL
+            By default choose public URL available if no versioning
+            otherwise filter specific version.
+        """
+        current_lava_url = None
+        sc_endpoints = service_catalog.get_endpoints(
+            service_type=service_type, endpoint_type=endpoint_type,
+            region_name=region_name, service_name=service_name)
+        if not sc_endpoints.get(service_type, []):
+            sc_endpoints = {}
+        if service_type not in sc_endpoints:
+            self._throw_endpoint_error(endpoint_type, service_name,
+                                       region_name, service_type)
+        endpoints = sc_endpoints.get(service_type)
+        if filter_attr:
+            endpoints = [endpoint
+                         for endpoint in endpoints
+                         if endpoint.get(filter_attr) == filter_value]
+        fallback_url = None
+        for endpoint in endpoints:
+            version_id = endpoint.get('versionId')
+            if version_id is None:
+                fallback_url = endpoint[endpoint_type]
+            elif version_id == CURRENT_LAVA_VERSION:
+                current_lava_url = endpoint[endpoint_type]
+        if not (current_lava_url or fallback_url):
+            raise ks_error.VersionNotAvailable(
+                'Unable to find version V{0} for the bigdata '
+                'endpoint'.format(CURRENT_LAVA_VERSION))
+        return current_lava_url or fallback_url
+
     def _get_endpoint(self, region, tenant_id):
         filters = dict(
             service_type=constants.CBD_SERVICE_TYPE,
-            region_name=region.upper())
+            region_name=region.upper(),
+            service_name=constants.CBD_SERVICE_NAME)
 
         if tenant_id:
-            filters.update(attr='tenantId', filter_value=tenant_id)
+            filters.update(filter_attr='tenantId', filter_value=tenant_id)
 
         try:
-            return self._auth.service_catalog.url_for(**filters)
+            return self._filter_current_endpoint(self._auth.service_catalog,
+                                                 **filters)
         except ks_error.EndpointNotFound as exc:
             LOG.critical('Error getting endpoint: {0}'.format(exc),
                          exc_info=exc)

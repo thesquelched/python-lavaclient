@@ -15,12 +15,14 @@ def lavaclient():
                 )
             )
         )
-        return client.Lava('username',
-                           'region',
-                           api_key='api_key',
-                           auth_url='auth_url',
-                           tenant_id='tenant_id',
-                           verify_ssl=False)
+        with patch.object(client.Lava, '_filter_current_endpoint') as endpoint:
+            endpoint.return_value = 'v2'
+            return client.Lava('username',
+                               'region',
+                               api_key='api_key',
+                               auth_url='auth_url',
+                               tenant_id='tenant_id',
+                               verify_ssl=False)
 
 
 @pytest.fixture

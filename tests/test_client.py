@@ -13,7 +13,7 @@ def test_requests(uuid4, lavaclient):
     with patch('requests.request') as request:
         lavaclient._get('path')
         request.assert_called_with(
-            'GET', 'endpoint/path',
+            'GET', 'v2/tenant_id/path',
             verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
@@ -23,7 +23,7 @@ def test_requests(uuid4, lavaclient):
     with patch('requests.request') as request:
         lavaclient._post('path')
         request.assert_called_with(
-            'POST', 'endpoint/path',
+            'POST', 'v2/tenant_id/path',
             verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
@@ -33,7 +33,7 @@ def test_requests(uuid4, lavaclient):
     with patch('requests.request') as request:
         lavaclient._put('path')
         request.assert_called_with(
-            'PUT', 'endpoint/path',
+            'PUT', 'v2/tenant_id/path',
             verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
@@ -43,7 +43,7 @@ def test_requests(uuid4, lavaclient):
     with patch('requests.request') as request:
         lavaclient._delete('path')
         request.assert_called_with(
-            'DELETE', 'endpoint/path',
+            'DELETE', 'v2/tenant_id/path',
             verify=False,
             headers={'X-Auth-Token': 'auth_token',
                      'Client-Request-ID': 'uuid',
@@ -58,7 +58,7 @@ def test_headers(uuid4, lavaclient):
     with patch('requests.request') as request:
         lavaclient._get('path', headers={'foo': 'bar'})
         request.assert_called_with(
-            'GET', 'endpoint/path',
+            'GET', 'v2/tenant_id/path',
             verify=False,
             headers={'foo': 'bar',
                      'X-Auth-Token': 'auth_token',
