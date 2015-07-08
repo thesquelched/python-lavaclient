@@ -48,10 +48,7 @@ class ApiKeyAuth(v2_auth.Auth):
         }
 
 
-class RaxAuthMixin(object):
-    """Mixin class for Keystone authentication plugins which injects
-    rackspace-specific data into authentication requests"""
-
+class PasswordAuth(v2_auth.Password):
     def get_auth_data(self, *args, **kwargs):
         data = super(PasswordAuth, self).get_auth_data(*args, **kwargs)
         data.update({
@@ -61,10 +58,6 @@ class RaxAuthMixin(object):
         })
 
         return data
-
-
-class PasswordAuth(v2_auth.Password, RaxAuthMixin):
-    pass
 
 
 class Client(v2_client.Client):
