@@ -23,7 +23,7 @@ from lavaclient.error import LavaError
 from lavaclient.util import get_function_arguments, first_exists
 from lavaclient.log import NullHandler
 from lavaclient.api import (clusters, limits, flavors, stacks, distros,
-                            scripts, nodes, credentials)
+                            scripts, nodes, credentials, service_users)
 
 
 LOG = logging.getLogger(__name__)
@@ -218,7 +218,7 @@ def parse_argv():
                    .set_defaults(resource=command, method=command))
 
     for module in (clusters, limits, flavors, stacks, distros, scripts, nodes,
-                   credentials):
+                   credentials, service_users):
         name = module.__name__.split('.')[-1]
         subparser = subparsers.add_parser(name, parents=[parser_base])
         subparser.set_defaults(resource=name)

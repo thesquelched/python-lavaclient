@@ -28,7 +28,8 @@ from datetime import datetime, timedelta
 from figgis import Config, ListField, Field, PropertyError, ValidationError
 
 from lavaclient.api import resource
-from lavaclient.api.response import Cluster, ClusterDetail, Node, ReprMixin
+from lavaclient.api.response import (Cluster, ClusterDetail, Node, ReprMixin,
+                                     ServiceUser, ServiceUserDetail)
 from lavaclient import error
 from lavaclient.validators import Length, Range, List
 from lavaclient.util import (CommandLine, argument, command, display_table,
@@ -562,6 +563,30 @@ class Resource(resource.Resource):
         :returns: List of :class:`~lavaclient.api.response.Node` objects
         """
         return self._client.nodes.list(cluster_id)
+
+    @command(parser_options=dict(
+        description='List all service users in the cluster'
+    ))
+    @display_table(ServiceUser)
+    def service_users(self, cluster_id):
+        """
+        Get the cluster service users
+
+        :param cluster_id: Cluster ID
+        :returns: List of :class:`~lavaclient.api.response.ServiceUser` objects
+        """
+        return self._client.service_users.list(cluster_id)
+
+    @command(parser_options=dict(
+        description='Reset password for Ambari read-only user'
+    ))
+    @display_table(ServiceUserDetail)
+    def reset_ambari_password(self, cluster_id):
+        """
+        See:
+        :class:`~lavaclient.api.service_users.Resource.reset_ambari_password`
+        """
+        return self._client.service_users.reset_ambari_password(cluster_id)
 
     def _get_named_node(self, nodes, node_name=None):
         if node_name is None:

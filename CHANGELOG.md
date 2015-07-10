@@ -1,3 +1,8 @@
+0.2.4
+-----
+* Add `service_users` methods
+* `clusters.create` now displays ambari read-only user info, if available
+
 0.2.3
 -----
 * Fix cluster create bug in CLI in which missing credentials are not detected

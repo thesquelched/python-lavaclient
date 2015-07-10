@@ -187,11 +187,19 @@ class ClusterScript(Config, ReprMixin):
 
 class ServiceUser(Config, ReprMixin):
 
-    table_columns = ('service', 'username', 'password')
+    table_columns = ('service', 'username')
 
     service = Field(six.text_type, required=True)
     username = Field(six.text_type, required=True)
-    password = Field(six.text_type)
+
+
+class ServiceUserDetail(Config, ReprMixin):
+
+    table_columns = ('service', 'username', 'password')
+
+    __inherits__ = [ServiceUser]
+
+    password = Field(six.text_type, required=True)
 
 
 class BaseCluster(object):
@@ -200,6 +208,11 @@ class BaseCluster(object):
     def nodes(self):
         """See: :meth:`~lavaclient.api.clusters.Resource.nodes`"""
         return self._client.clusters.nodes(self.id)
+
+    @property
+    def service_users(self):
+        """See: :meth:`~lavaclient.api.clusters.Resource.service_users`"""
+        return self._client.clusters.service_users(self.id)
 
     def refresh(self):
         """
@@ -287,7 +300,7 @@ class ClusterDetail(Config, ReprMixin, BaseCluster):
     scripts = ListField(ClusterScript, required=True,
                         help='See: :class:`ClusterScript`')
     progress = Field(float, required=True)
-    service_users = ListField(ServiceUser,
+    service_users = ListField(ServiceUserDetail,
                               help='See: :class:`ServiceUser`')
 
     def display(self):

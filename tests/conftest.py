@@ -141,6 +141,14 @@ def clusters_response(cluster):
 
 
 @pytest.fixture
+def cluster_create_response(cluster_detail, service_user_response):
+    detail = cluster_detail.copy()
+    detail['service_users'] = [service_user_response['service_user']]
+
+    return {'cluster': detail}
+
+
+@pytest.fixture
 def script(link_response):
     return {
         'id': 'id',
@@ -385,3 +393,26 @@ def credentials_response(ssh_key, cloud_files, s3):
             's3': [s3],
         }
     }
+
+
+@pytest.fixture
+def ambari_user():
+    return {
+        'service': 'AMBARI',
+        'username': 'username',
+    }
+
+
+@pytest.fixture
+def service_users_response(ambari_user):
+    return {
+        'service_users': [ambari_user]
+    }
+
+
+@pytest.fixture
+def service_user_response(ambari_user):
+    user = ambari_user.copy()
+    user['password'] = 'password'
+
+    return {'service_user': user}

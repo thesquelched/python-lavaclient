@@ -29,7 +29,8 @@ from lavaclient import constants
 from lavaclient import error
 from lavaclient.log import NullHandler
 from lavaclient.api import (clusters, limits, flavors, stacks, distros,
-                            workloads, scripts, nodes, credentials)
+                            workloads, scripts, nodes, credentials,
+                            service_users)
 
 
 LOG = logging.getLogger(__name__)
@@ -120,6 +121,7 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
         self.scripts = scripts.Resource(self, cli_args=_cli_args)
         self.nodes = nodes.Resource(self, cli_args=_cli_args)
         self.credentials = credentials.Resource(self, cli_args=_cli_args)
+        self.service_users = service_users.Resource(self, cli_args=_cli_args)
 
         # Workloads isn't terrible useful right now, but I don't want to delete
         # it entirely. Therefore, I'll just make it private for now.
