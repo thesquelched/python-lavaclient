@@ -318,8 +318,9 @@ def node(link_response):
         },
         'components': [
             {
-                "name": 'component_name',
-                "uri": 'http://host'
+                'name': 'component_name',
+                'nice_name': 'Component name',
+                'uri': 'http://host'
             }
         ],
         "links": [link_response]

@@ -32,7 +32,8 @@ from lavaclient.api.response import Cluster, ClusterDetail, Node, ReprMixin
 from lavaclient import error
 from lavaclient.validators import Length, Range, List
 from lavaclient.util import (CommandLine, argument, command, display_table,
-                             coroutine, create_socks_proxy, expand, confirm)
+                             coroutine, create_socks_proxy, expand, confirm,
+                             display)
 from lavaclient.log import NullHandler
 
 
@@ -553,7 +554,7 @@ class Resource(resource.Resource):
     @command(parser_options=dict(
         description='List all nodes in the cluster'
     ))
-    @display_table(Node)
+    @display(Node.display_nodes)
     def nodes(self, cluster_id):
         """
         Get the cluster nodes
