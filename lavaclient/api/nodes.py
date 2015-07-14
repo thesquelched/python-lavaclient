@@ -5,7 +5,7 @@ from figgis import Config, ListField
 from lavaclient.api import resource
 from lavaclient import constants
 from lavaclient.api.response import Node
-from lavaclient.util import command, display_table, CommandLine
+from lavaclient.util import command, display, CommandLine
 
 LOG = logging.getLogger(constants.LOGGER_NAME)
 
@@ -32,7 +32,7 @@ class Resource(resource.Resource):
     @command(parser_options=dict(
         description='List all nodes in a cluster'
     ))
-    @display_table(Node)
+    @display(Node.display_nodes)
     def list(self, cluster_id):
         """
         List nodes belonging to the cluster.

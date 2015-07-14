@@ -14,14 +14,14 @@ import logging
 import subprocess
 import textwrap
 import six
-from itertools import chain
+from itertools import chain, repeat
 from figgis import Config, Field, ListField
 from dateutil.parser import parse as dateparse
 from datetime import datetime
 
 from lavaclient.validators import Length, Range
 from lavaclient.util import (display_result, prettify, _prettify, ssh_to_host,
-                             print_table)
+                             print_table, no_nulls)
 from lavaclient.log import NullHandler
 from lavaclient import error
 
@@ -93,9 +93,9 @@ class Addresses(Config, ReprMixin):
 @prettify('components')
 class Node(Config, ReprMixin):
     table_columns = ('id', 'name', 'node_group', 'status',
-                     'public_ip', 'private_ip', '_components')
+                     'public_ip', 'private_ip')
     table_header = ('ID', 'Name', 'Role', 'Status', 'Public IP',
-                    'Private IP', 'Components')
+                    'Private IP')
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
@@ -114,6 +114,21 @@ class Node(Config, ReprMixin):
     components = ListField(dict, required=True,
                            help='Components installed on this node, e.g. '
                                 '`HiveClient`')
+
+    @classmethod
+    def display_nodes(cls, nodes):
+        display_result(nodes, Node, title='Nodes')
+
+        rows = []
+        for node in nodes:
+            node_column = chain([node.name], repeat(''))
+
+            rows.extend(
+                no_nulls([name, comp['name'], comp['nice_name'],
+                          comp.get('uri')])
+                for name, comp in six.moves.zip(node_column, node.components))
+
+        print_table(rows, ('Node', 'ID', 'Name', 'URI'), title='Components')
 
     @property
     def private_ip(self):
