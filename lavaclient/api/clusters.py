@@ -33,7 +33,7 @@ from lavaclient import error
 from lavaclient.validators import Length, Range, List
 from lavaclient.util import (CommandLine, argument, command, display_table,
                              coroutine, create_socks_proxy, expand, confirm,
-                             display)
+                             display, create_ssh_tunnel)
 from lavaclient.log import NullHandler
 
 
@@ -564,24 +564,29 @@ class Resource(resource.Resource):
         """
         return self._client.nodes.list(cluster_id)
 
-    def _get_named_node(self, nodes, node_name=None):
+    def _get_named_node(self, nodes, node_name=None, wait=False):
         if node_name is None:
             return nodes[0]
 
         try:
-            ssh_node = six.next(node for node in nodes
-                                if node.name.lower() == node_name.lower())
+            return six.next(node for node in nodes
+                            if node.name.lower() == node_name.lower())
         except StopIteration:
             raise error.InvalidError(
                 'Invalid node: {0}; available nodes are {1}'.format(
                     node_name, ', '.join(node.name for node in nodes)))
 
-        if ssh_node.status.upper() != 'ACTIVE':
-            raise error.InvalidError(
-                'Node {0} must be ACTIVE, but is {1} instead'.format(
-                    node_name, ssh_node.status))
+    def _get_component_node(self, nodes, component, wait=False):
+        components_by_node = (
+            (node, (comp['name'].lower() for comp in node.components))
+            for node in nodes)
 
-        return ssh_node
+        try:
+            return six.next(node for node, components in components_by_node
+                            if component.lower() in components)
+        except StopIteration:
+            raise error.InvalidError(
+                'Component {0} not found in cluster'.format(component))
 
     def _cluster_nodes(self, cluster_id, wait=False):
         """
@@ -720,3 +725,76 @@ class Resource(resource.Resource):
         return self._execute_ssh(cluster_id, node_name=node_name,
                                  ssh_command=ssh_command, command=command,
                                  wait=wait)
+
+    @command(
+        parser_options=dict(description='Create SSH tunnel'),
+        local_port=argument(type=int,
+                            help='Port to which to bind on localhost'),
+        remote_port=argument(type=int,
+                             help='Port to which to bind on cluster node'),
+        node_name=argument(help='Name of node on which to make the SSH '
+                                'connection, e.g. gateway-1. Mutually '
+                                'exclusive with --component'),
+        component=argument(help='Find and connect to node containing a '
+                                'particular component, e.g. HiveServer2. '
+                                'Mutually exclusive with --node-name'),
+        ssh_command=argument(help="SSH command (default: 'ssh')"),
+        wait=argument(action='store_true',
+                      help="Wait for cluster to become active (if it isn't "
+                           "already)"),
+    )
+    def ssh_tunnel(self, cluster_id, local_port, remote_port, node_name=None,
+                   component=None, ssh_command=None, wait=False):
+        """
+        Create a SSH tunnel from the local host to a particular port on a
+        cluster node.  Returns the SSH process (via
+        :py:class:`~subprocess.Popen`), which can be stopped via the
+        :func:`kill` method.
+
+        :param cluster_id: Cluster ID
+        :param local_port: Port on which to bind on localhost
+        :param remote_port: Port on which to bind on the cluster node
+        :param node_name: Name of node on which to make the SSH connection.
+                          Mutually exclusive with `component`
+        :param component: Name of a component installed on a node in the
+                          cluster, e.g. `HiveServer2`. SSH tunnel will be set
+                          up on the first node containing the component.
+                          Mutually exclusive with `node_name`
+        :param wait: If `True`, wait for the cluster to become active before
+                     creating the proxy
+        :returns: :py:class:`~subprocess.Popen` object representing the SSH
+                  connection.
+        """
+        if node_name and component:
+            raise error.InvalidError(
+                'node_name and component are mutually exclusive')
+        elif not (node_name or component):
+            raise error.InvalidError(
+                'One of node_name or component is required')
+
+        cluster, nodes = self._cluster_nodes(cluster_id, wait=wait)
+
+        if component:
+            ssh_node = self._get_component_node(nodes, component)
+        else:
+            ssh_node = self._get_named_node(nodes, node_name=node_name)
+
+        printer = self._cli_printer(LOG)
+        printer('Starting SSH tunnel from localhost:{0} to {1}:{2} '
+                '({3})'.format(local_port, ssh_node.name, remote_port,
+                               ssh_node.public_ip))
+
+        process = create_ssh_tunnel(cluster.username, ssh_node, local_port,
+                                    remote_port, ssh_command=ssh_command)
+
+        printer('Successfully created SSH tunnel to localhost:{0}'.format(
+            local_port), logging.INFO)
+
+        if not self._command_line:
+            return process
+
+        try:
+            printer('Use Ctrl-C to stop tunnel', logging.NOTSET)
+            process.communicate()
+        except KeyboardInterrupt:
+            printer('SSH tunnel closed')
