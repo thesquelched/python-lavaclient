@@ -172,11 +172,17 @@ def test_resize(args, node_groups, print_table, print_single_table,
 
 
 @patch('sys.argv', ['lava', 'clusters', 'delete', 'cluster_id'])
-def test_delete(mock_client):
-    main()
-    args = mock_client._request.call_args[0]
+@patch('lavaclient.api.clusters.confirm', MagicMock(return_value=True))
+def test_delete(mock_client, cluster_response, print_single_table):
+    mock_client._request.return_value = cluster_response
 
-    assert args == ('DELETE', 'clusters/cluster_id')
+    main()
+    assert mock_client._request.call_count == 2
+
+    call1, call2 = mock_client._request.call_args_list
+
+    assert call1[0] == ('GET', 'clusters/cluster_id')
+    assert call2[0] == ('DELETE', 'clusters/cluster_id')
 
 
 @patch('sys.argv', ['lava', 'clusters', 'wait', 'cluster_id'])

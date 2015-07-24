@@ -33,7 +33,7 @@ from lavaclient import error
 from lavaclient.validators import Length, Range, List
 from lavaclient.util import (CommandLine, argument, command, display_table,
                              coroutine, create_socks_proxy, expand, confirm,
-                             display, create_ssh_tunnel)
+                             display, create_ssh_tunnel, display_result)
 from lavaclient.log import NullHandler
 
 
@@ -468,6 +468,14 @@ class Resource(resource.Resource):
             description='Delete a cluster',
         ),
     )
+    def _delete(self, cluster_id):
+        display_result(self.get(cluster_id), ClusterDetail)
+
+        if not confirm('Delete this cluster?'):
+            return
+
+        self.delete(cluster_id)
+
     def delete(self, cluster_id):
         """
         Delete a cluster

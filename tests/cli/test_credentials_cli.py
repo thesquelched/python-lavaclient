@@ -1,4 +1,4 @@
-from mock import patch
+from mock import patch, MagicMock
 
 from lavaclient.cli import main
 
@@ -139,6 +139,7 @@ def test_update_s3(print_single_table, mock_client,
 
 
 @patch('sys.argv', ['lava', 'credentials', 'delete_ssh_key', 'name'])
+@patch('lavaclient.api.credentials.confirm', MagicMock(return_value=True))
 def test_delete_ssh_key(mock_client):
     mock_client._request.return_value = None
     main()
@@ -146,6 +147,7 @@ def test_delete_ssh_key(mock_client):
 
 @patch('sys.argv', ['lava', 'credentials', 'delete_cloud_files',
                     'username'])
+@patch('lavaclient.api.credentials.confirm', MagicMock(return_value=True))
 def test_delete_cloud_files(mock_client):
     mock_client._request.return_value = None
     main()
@@ -153,6 +155,7 @@ def test_delete_cloud_files(mock_client):
 
 @patch('sys.argv', ['lava', 'credentials', 'delete_s3',
                     'username'])
+@patch('lavaclient.api.credentials.confirm', MagicMock(return_value=True))
 def test_delete_s3(mock_client):
     mock_client._request.return_value = None
     main()
