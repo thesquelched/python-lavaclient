@@ -23,7 +23,7 @@ from lavaclient.api.response import (Credentials, CloudFilesCredential, SSHKey,
                                      S3Credential, CredentialType)
 from lavaclient.validators import Length
 from lavaclient.util import (CommandLine, argument, command, display_table,
-                             file_or_string)
+                             file_or_string, confirm)
 from lavaclient.log import NullHandler
 
 
@@ -351,6 +351,12 @@ class Resource(resource.Resource):
         parser_options=dict(description='Delete an SSH key'),
         name=argument(help='SSH key name')
     )
+    def _delete_ssh_key(self, name):
+        if not confirm('Delete SSH key {0}?'.format(name)):
+            return
+
+        return self.delete_ssh_key(name)
+
     def delete_ssh_key(self, name):
         """
         Delete SSH key
@@ -363,6 +369,12 @@ class Resource(resource.Resource):
         parser_options=dict(description='Delete a Cloud Files credential'),
         name=argument(help='Cloud Files username')
     )
+    def _delete_cloud_files(self, username):
+        if not confirm('Delete Cloud Files username {0}?'.format(username)):
+            return
+
+        return self.delete_cloud_files(username)
+
     def delete_cloud_files(self, username):
         """
         Delete Cloud Files credential
@@ -375,6 +387,12 @@ class Resource(resource.Resource):
         parser_options=dict(description='Delete Amazon S3 credential'),
         name=argument(help='Amazon S3 access key id')
     )
+    def _delete_s3(self, access_key_id):
+        if not confirm('Delete S3 access key {0}?'.format(access_key_id)):
+            return
+
+        return self.delete_s3(access_key_id)
+
     def delete_s3(self, access_key_id):
         """
         Delete Amazon s3 credential

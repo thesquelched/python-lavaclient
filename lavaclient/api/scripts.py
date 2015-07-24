@@ -17,7 +17,8 @@ from figgis import Config, ListField, Field
 from lavaclient.api import resource
 from lavaclient.api.response import Script
 from lavaclient.validators import Length
-from lavaclient.util import display_table, CommandLine, command, argument
+from lavaclient.util import (display_table, CommandLine, command, argument,
+                             confirm)
 from lavaclient.log import NullHandler
 
 
@@ -161,6 +162,12 @@ class Resource(resource.Resource):
     @command(parser_options=dict(
         description='Delete a cluster script',
     ))
+    def _delete(self, script_id):
+        if not confirm('Delete script {0}?'.format(script_id)):
+            return
+
+        return self.delete(script_id)
+
     def delete(self, script_id):
         """
         Delete a script.

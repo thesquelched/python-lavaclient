@@ -1,5 +1,5 @@
 import pytest
-from mock import patch
+from mock import patch, MagicMock
 from datetime import datetime
 
 from lavaclient.cli import main
@@ -69,6 +69,7 @@ def test_update(name, url, script_type, print_single_table,
 
 
 @patch('sys.argv', ['lava', 'scripts', 'delete', 'script_id'])
+@patch('lavaclient.api.scripts.confirm', MagicMock(return_value=True))
 def test_delete(mock_client):
     main()
     args = mock_client._request.call_args[0]
