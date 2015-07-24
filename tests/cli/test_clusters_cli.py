@@ -332,3 +332,50 @@ def test_ssh_proxy_http_fail(test_connection, popen, error_code, mock_client,
                             '--node-name', 'NODENAME', '--port',
                             '54321']):
         pytest.raises(Exception, main)
+
+
+@patch('subprocess.Popen')
+def test_ssh_tunnel_nodename(popen, mock_client, cluster_response,
+                             nodes_response):
+    popen.return_value = MagicMock(
+        poll=MagicMock(return_value=None),
+        communicate=MagicMock(return_value=('stdout', 'stderr'))
+    )
+    mock_client._request.side_effect = [cluster_response, nodes_response]
+
+    with patch('sys.argv', ['lava', 'clusters', 'ssh_tunnel', 'cluster_id',
+                            '123', '456', '--node-name', 'NODENAME']):
+        main()
+
+    popen.assert_called_with(
+        ['ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes',
+         '-N', '-L', '123:NODENAME:456', 'username@1.2.3.4'],
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE)
+
+
+@patch('subprocess.Popen')
+def test_ssh_tunnel_component(popen, mock_client, cluster_response,
+                              nodes_response):
+    popen.return_value = MagicMock(
+        poll=MagicMock(return_value=None),
+        communicate=MagicMock(return_value=('stdout', 'stderr'))
+    )
+    mock_client._request.side_effect = [cluster_response, nodes_response]
+
+    with patch('sys.argv', ['lava', 'clusters', 'ssh_tunnel', 'cluster_id',
+                            '123', '456', '--component', 'component_name']):
+        main()
+
+    popen.assert_called_with(
+        ['ssh', '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes',
+         '-N', '-L', '123:NODENAME:456', 'username@1.2.3.4'],
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE)
+
+
+def test_ssh_tunnel_arg_failure(mock_client):
+    with patch('sys.argv', ['lava', 'clusters', 'ssh_tunnel', 'cluster_id',
+                            '123', '456', '--component', 'component_name',
+                            '--node-name', 'NODENAME']):
+        pytest.raises(Exception, main)

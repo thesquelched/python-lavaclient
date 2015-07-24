@@ -629,6 +629,33 @@ def create_socks_proxy(username, host, port, ssh_command=None, test_url=None):
         raise
 
 
+def create_ssh_tunnel(username, node, local_port, remote_port,
+                      ssh_command=None):
+    """Create SSH tunnel on localhost:local_port to host:remote_port"""
+    if isinstance(ssh_command, six.string_types):
+        ssh_command = shlex.split(ssh_command)
+    elif ssh_command is None:
+        ssh_command = ['ssh']
+
+    options = [
+        '-o', 'PasswordAuthentication=no', '-o', 'BatchMode=yes', '-N',
+        '-L', ':'.join([str(local_port), node.name, str(remote_port)])]
+    command = ssh_command + options + ['@'.join([username, node.public_ip])]
+
+    LOG.debug('SSH tunnel command: %s', ' '.join(command))
+    process = subprocess.Popen(
+        [expand(item) for item in command],
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE)
+
+    if process.poll():
+        output, _ = process.communicate()
+        LOG.critical('SSH tunnel failed: %s', output)
+        raise error.LavaError('Failed to set up SSH tunnel')
+
+    return process
+
+
 def inject_client(client, obj):
     """Inject the `_client` attribute into every figgis.Config nested in the
     object"""
