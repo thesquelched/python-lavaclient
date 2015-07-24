@@ -200,15 +200,6 @@ class ClusterScript(Config, ReprMixin):
     status = Field(six.text_type, required=True)
 
 
-class ServiceUser(Config, ReprMixin):
-
-    table_columns = ('service', 'username', 'password')
-
-    service = Field(six.text_type, required=True)
-    username = Field(six.text_type, required=True)
-    password = Field(six.text_type)
-
-
 class BaseCluster(object):
 
     @property
@@ -302,8 +293,6 @@ class ClusterDetail(Config, ReprMixin, BaseCluster):
     scripts = ListField(ClusterScript, required=True,
                         help='See: :class:`ClusterScript`')
     progress = Field(float, required=True)
-    service_users = ListField(ServiceUser,
-                              help='See: :class:`ServiceUser`')
 
     def display(self):
         display_result(self, ClusterDetail, title='Cluster')
@@ -315,11 +304,6 @@ class ClusterDetail(Config, ReprMixin, BaseCluster):
         if self.scripts:
             six.print_()
             display_result(self.scripts, ClusterScript, title='Scripts')
-
-        if self.service_users:
-            six.print_()
-            display_result(self.service_users, ServiceUser,
-                           title='Service Users')
 
 
 class Flavor(Config, ReprMixin):
