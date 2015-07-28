@@ -5,70 +5,38 @@ from lavaclient.api import response
 from lavaclient import error
 
 
-@pytest.fixture
-def cluster_fixture(link_response):
-    return {
-        'id': 'cluster_id',
-        'created': '2014-01-01',
-        'updated': None,
-        'name': 'cluster_name',
-        'status': 'ACTIVE',
-        'stack_id': 'stack_id',
-        'cbd_version': 1,
-        'links': [link_response],
-    }
-
-
-@pytest.fixture
-def cluster_detail_fixture(cluster_fixture, node_group, cluster_script):
-    data = cluster_fixture.copy()
-    data.update(
-        node_groups=[node_group],
-        username='username',
-        scripts=[cluster_script],
-        progress=1.0
-    )
-    return data
-
-
-def test_api_list(lavaclient, cluster_fixture):
+def test_api_list(lavaclient, clusters_response):
     with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'clusters': []}
-        resp = lavaclient.clusters.list()
-        assert isinstance(resp, list)
-        assert len(resp) == 0
-
-    with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'clusters': [cluster_fixture]}
+        request.return_value = clusters_response
         resp = lavaclient.clusters.list()
         assert isinstance(resp, list)
         assert len(resp) == 1
         assert isinstance(resp[0], response.Cluster)
 
 
-def test_api_get(lavaclient, cluster_detail_fixture):
+def test_api_get(lavaclient, cluster_response):
     with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'cluster': cluster_detail_fixture}
+        request.return_value = cluster_response
         resp = lavaclient.clusters.get('cluster_id')
         assert isinstance(resp, response.ClusterDetail)
 
 
-def test_api_create(lavaclient, cluster_detail_fixture):
+def test_api_create(lavaclient, cluster_response):
     with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'cluster': cluster_detail_fixture}
+        request.return_value = cluster_response
         resp = lavaclient.clusters.create(
             'cluster_name', 'stack_id')
         assert isinstance(resp, response.ClusterDetail)
 
     with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'cluster': cluster_detail_fixture}
+        request.return_value = cluster_response
         resp = lavaclient.clusters.create(
             'cluster_name', 'stack_id',
             node_groups=[])
         assert isinstance(resp, response.ClusterDetail)
 
     with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'cluster': cluster_detail_fixture}
+        request.return_value = cluster_response
         resp = lavaclient.clusters.create(
             'cluster_name', 'stack_id',
             node_groups=[{
@@ -85,10 +53,10 @@ def test_api_create(lavaclient, cluster_detail_fixture):
                   node_groups=[{'id': 'x' * 256}])
 
 
-def test_api_resize(lavaclient, cluster_detail_fixture):
+def test_api_resize(lavaclient, cluster_response):
     with patch.object(lavaclient, '_request') as request:
 
-        request.return_value = {'cluster': cluster_detail_fixture}
+        request.return_value = cluster_response
         resp = lavaclient.clusters.resize(
             'cluster_id',
             node_groups=[{
@@ -106,9 +74,9 @@ def test_api_resize(lavaclient, cluster_detail_fixture):
                   'cluster_id', node_groups=[{'id': 'node_id'}])
 
 
-def test_api_delete(lavaclient, cluster_fixture):
+def test_api_delete(lavaclient, cluster_response):
     with patch.object(lavaclient, '_request') as request:
-        request.return_value = {'cluster': cluster_fixture}
+        request.return_value = cluster_response
         resp = lavaclient.clusters.delete('cluster_id')
         assert resp is None
 

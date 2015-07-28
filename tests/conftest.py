@@ -125,7 +125,13 @@ def cluster_detail(cluster, node_group, cluster_script):
         node_groups=[node_group],
         username='username',
         scripts=[cluster_script],
-        progress=1.0
+        progress=1.0,
+        credentials=[
+            {'type': 'ssh_keys', 'name': 'mykey'},
+            {'type': 'cloud_files', 'name': 'username'},
+            {'type': 'ambari', 'name': 'username'},
+            {'type': 's3', 'name': 'accesskey'},
+        ],
     )
     return data
 
@@ -348,6 +354,11 @@ def s3():
 
 
 @pytest.fixture
+def ambari():
+    return {'username': 'username', 'password': 'password'}
+
+
+@pytest.fixture
 def ssh_key_response(ssh_key):
     return {'credentials': {'ssh_keys': ssh_key}}
 
@@ -378,11 +389,22 @@ def s3_creds_response(s3):
 
 
 @pytest.fixture
-def credentials_response(ssh_key, cloud_files, s3):
+def ambari_cred_response(ambari):
+    return {'credentials': {'ambari': ambari}}
+
+
+@pytest.fixture
+def ambari_creds_response(ambari):
+    return {'credentials': {'ambari': [ambari]}}
+
+
+@pytest.fixture
+def credentials_response(ssh_key, cloud_files, s3, ambari):
     return {
         'credentials': {
             'ssh_keys': [ssh_key],
             'cloud_files': [cloud_files],
             's3': [s3],
+            'ambari': [ambari],
         }
     }
