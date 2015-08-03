@@ -151,14 +151,14 @@ def initialize_logging(args):  # pragma: nocover
         logging.basicConfig(level=logging.DEBUG)
 
         # Do crazy verbose logging for HTTP connections
-        try:
-            import http.client as http_client
-        except ImportError:
-            # Python 2
-            import httplib as http_client
+        if args.debug > 1:
+            try:
+                import http.client as http_client
+            except ImportError:
+                # Python 2
+                import httplib as http_client
 
-        http_client.HTTPConnection.debuglevel = 1
-
+            http_client.HTTPConnection.debuglevel = 1
     try:
         logging.captureWarnings(True)
     except AttributeError:
@@ -189,8 +189,9 @@ def parse_argv():
                              help='Tenant ID')
         general.add_argument('--version',
                              help='Print client version')
-        general.add_argument('--debug', '-d', action='store_true',
-                             help='Print debugging information')
+        general.add_argument('--debug', '-d', action='count',
+                             help='Print debugging information; use multiple '
+                                  'times for more verbose logging')
         general.add_argument('--endpoint',
                              help='API endpoint URL')
         general.add_argument('--auth-url',
