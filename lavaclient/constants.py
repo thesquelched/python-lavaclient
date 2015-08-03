@@ -19,3 +19,4 @@ LOGGER_NAME = 'lavaclient'
 # Authentication
 DEFAULT_AUTH_URL = 'https://identity.api.rackspacecloud.com/v2.0'
 CBD_SERVICE_TYPE = 'rax:bigdata'
+CBD_SERVICE_NAME = 'cloudBigData'
