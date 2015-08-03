@@ -1,4 +1,4 @@
-from mock import patch
+from mock import patch, call
 
 from lavaclient.cli import main
 from lavaclient.api.response import Node
@@ -12,8 +12,8 @@ def test_list(resp_print_table, print_table, mock_client, nodes_response):
 
     (data, header), kwargs = print_table.call_args
     alldata = [entry for entry in list(data)[0]]
-    assert alldata[:6] == ['node_id', 'NODENAME', '[]', 'ACTIVE', '1.2.3.4',
-                           '5.6.7.8']
+    assert alldata[:6] == ['node_id', 'NODENAME', 'node_group', 'ACTIVE',
+                           '1.2.3.4', '5.6.7.8']
     assert header == Node.table_header
     assert kwargs['title'] == 'Nodes'
 
@@ -23,3 +23,14 @@ def test_list(resp_print_table, print_table, mock_client, nodes_response):
                            'http://host']
     assert header == ('Node', 'ID', 'Name', 'URI')
     assert kwargs['title'] == 'Components'
+
+
+@patch('sys.argv', ['lava', 'nodes', 'list', 'cluster_id', '--no-format'])
+@patch('lavaclient.cli.six.print_')
+def test_list_noformat(sixprint, mock_client, nodes_response):
+    mock_client._request.return_value = nodes_response
+    main()
+
+    sixprint.assert_has_calls([
+        call('node_id,NODENAME,node_group,ACTIVE,1.2.3.4,5.6.7.8')
+    ])
