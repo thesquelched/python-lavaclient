@@ -20,8 +20,7 @@ from figgis import Config, ListField, Field
 
 from lavaclient.api import resource
 from lavaclient.api.response import (Credentials, CloudFilesCredential, SSHKey,
-                                     S3Credential, AmbariCredential,
-                                     CredentialType)
+                                     S3Credential, CredentialType)
 from lavaclient.validators import Length
 from lavaclient.util import (CommandLine, argument, command, display_table,
                              file_or_string, confirm)
@@ -41,7 +40,6 @@ class Credential(Config):
     cloud_files = Field(CloudFilesCredential)
     ssh_keys = Field(SSHKey)
     s3 = Field(S3Credential)
-    ambari = Field(AmbariCredential)
 
 
 class CredentialsResponse(Config):
@@ -89,14 +87,6 @@ class CreateS3Request(Config):
                               validator=Length(min=40, max=40))
 
 
-class CreateAmbariRequest(Config):
-
-    username = Field(six.text_type, required=True, nullable=False,
-                     validator=Length(min=3, max=255))
-    password = Field(six.text_type, nullable=False, required=True,
-                     validator=Length(min=8, max=255))
-
-
 ######################################################################
 # API Resource
 ######################################################################
@@ -123,7 +113,8 @@ class Resource(resource.Resource):
         """
         List all credentials belonging to the tenant
 
-        :returns: List of :class:`Credentials` objects
+        :returns: List of :class:`Credentials`
+                  objects
         """
         return self._list()
 
@@ -162,18 +153,6 @@ class Resource(resource.Resource):
         :returns: List of :class:`S3Credential` objects
         """
         return self._list(type='s3')
-
-    @command(parser_options=dict(
-        description='List all Ambari credentials'
-    ))
-    @display_table(AmbariCredential)
-    def list_ambari(self):
-        """
-        List all Ambari credentials
-
-        :returns: List of :class:`AmbariCredential` objects
-        """
-        return self._list(type='ambari')
 
     def list_types(self):
         """
@@ -278,35 +257,6 @@ class Resource(resource.Resource):
 
     @command(
         parser_options=dict(
-            description='Add credentials for Ambari'
-        ),
-        username=argument(help='Ambari username'),
-        password=argument(help='Password')
-    )
-    @display_table(AmbariCredential)
-    def create_ambari(self, username, password):
-        """
-        Create credentials for Ambari access
-
-        :param username: Ambari username
-        :param password: Password
-        :returns: :class:`AmbariCredential`
-        """
-        data = dict(
-            username=username,
-            password=password,
-        )
-        request_data = self._marshal_request(
-            data, CreateAmbariRequest, wrapper='ambari')
-
-        resp = self._parse_response(
-            self._client._post('credentials/ambari', json=request_data),
-            CredentialResponse,
-            wrapper='credentials')
-        return resp.ambari
-
-    @command(
-        parser_options=dict(
             description='Update SSH key'
         ),
         name=argument(metavar='<name>', help='Name of existing SSH key'),
@@ -398,36 +348,6 @@ class Resource(resource.Resource):
         return resp.s3
 
     @command(
-        parser_options=dict(
-            description='Update credentials for Ambari'
-        ),
-        username=argument(help='Username for existing Ambari credential'),
-        password=argument(help='Password')
-    )
-    @display_table(AmbariCredential)
-    def update_ambari(self, username, password):
-        """
-        Update credentials for Ambari access
-
-        :param username: Ambari username
-        :param password: Password
-        :returns: :class:`AmbariCredential`
-        """
-        data = dict(
-            username=username,
-            password=password)
-        request_data = self._marshal_request(
-            data, CreateAmbariRequest, wrapper='ambari')
-
-        resp = self._parse_response(
-            self._client._put(
-                'credentials/ambari/{0}'.format(username),
-                json=request_data),
-            CredentialResponse,
-            wrapper='credentials')
-        return resp.ambari
-
-    @command(
         parser_options=dict(description='Delete an SSH key'),
         name=argument(help='SSH key name')
     )
@@ -447,7 +367,7 @@ class Resource(resource.Resource):
 
     @command(
         parser_options=dict(description='Delete a Cloud Files credential'),
-        username=argument(help='Cloud Files username')
+        name=argument(help='Cloud Files username')
     )
     def _delete_cloud_files(self, username):
         if not confirm('Delete Cloud Files username {0}?'.format(username)):
@@ -465,7 +385,7 @@ class Resource(resource.Resource):
 
     @command(
         parser_options=dict(description='Delete Amazon S3 credential'),
-        access_key_id=argument(help='Amazon S3 access key id')
+        name=argument(help='Amazon S3 access key id')
     )
     def _delete_s3(self, access_key_id):
         if not confirm('Delete S3 access key {0}?'.format(access_key_id)):
@@ -480,21 +400,3 @@ class Resource(resource.Resource):
         :param access_key_id: S3 access key id
         """
         self._client._delete('credentials/s3/{0}'.format(access_key_id))
-
-    @command(
-        parser_options=dict(description='Delete Ambari credential'),
-        username=argument(help='Ambari username')
-    )
-    def _delete_ambari(self, username):
-        if not confirm('Delete Ambari user {0}?'.format(username)):
-            return
-
-        return self.delete_ambari(username)
-
-    def delete_ambari(self, username):
-        """
-        Delete Ambari credential
-
-        :param username: Ambari username
-        """
-        self._client._delete('credentials/ambari/{0}'.format(username))

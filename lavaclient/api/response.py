@@ -50,7 +50,7 @@ class ReprMixin(object):
         ordered = []
         for key in ('id', 'name'):
             if key in properties:
-                ordered.append("{0}='{1}'".format(key, getattr(self, key)))
+                ordered.append("{0}='{1}'".format(key, self.get(key)))
                 properties.remove(key)
 
         # Next come any other id's
@@ -280,28 +280,6 @@ class Cluster(Config, ReprMixin, BaseCluster):
 class ClusterDetail(Config, ReprMixin, BaseCluster):
     """Detailed cluster information"""
 
-    def parse_cluster_credentials(value):
-        result = {
-            's3': [],
-            'cloud_files': [],
-            'ambari': [],
-            'ssh_keys': [],
-        }
-
-        attr_names = {
-            's3': 'access_key_id',
-            'cloud_files': 'username',
-            'ambari': 'username',
-            'ssh_keys': 'key_name',
-        }
-
-        for item in value:
-            type_ = item['type']
-            cred = {'type': type_, attr_names[type_]: item['name']}
-            result[type_].append(cred)
-
-        return Credentials(result)
-
     __inherits__ = [Cluster]
 
     table_columns = ('id', 'name', 'status', 'stack_id', 'created',
@@ -315,7 +293,6 @@ class ClusterDetail(Config, ReprMixin, BaseCluster):
     scripts = ListField(ClusterScript, required=True,
                         help='See: :class:`ClusterScript`')
     progress = Field(float, required=True)
-    credentials = Field(parse_cluster_credentials, required=True)
 
     def display(self):
         display_result(self, ClusterDetail, title='Cluster')
@@ -616,7 +593,7 @@ class CloudFilesCredential(Config, ReprMixin):
         self._client.credentials.delete_cloud_files(self.username)
 
 
-class S3Credential(Config, ReprMixin):
+class S3Credential(Config):
 
     table_columns = ('type', 'access_key_id')
     table_header = ('Type', 'Access Key ID')
@@ -634,36 +611,17 @@ class S3Credential(Config, ReprMixin):
         self.__client.credentials.delete_s3(self.access_key_id)
 
 
-class AmbariCredential(Config, ReprMixin):
-
-    table_columns = ('type', 'username')
-
-    type = 'Ambari'
-    username = Field(six.text_type, required=True)
-
-    @property
-    def id(self):
-        """Equivalent to :attr:`username`"""
-        return self.username
-
-    def delete(self):
-        """Delete s3 credential"""
-        self.__client.credentials.delete_ambari(self.username)
-
-
-class Credentials(Config, ReprMixin):
+class Credentials(Config):
 
     cloud_files = ListField(CloudFilesCredential)
     ssh_keys = ListField(SSHKey)
     s3 = ListField(S3Credential)
-    ambari = ListField(AmbariCredential)
 
     def display(self):
         data = chain(
             [('SSH Key', key.name) for key in self.ssh_keys],
             [('Cloud Files', cred.username) for cred in self.cloud_files],
-            [('Amazon S3', cred.access_key_id) for cred in self.s3],
-            [('Ambari', cred.username) for cred in self.ambari]
+            [('Amazon S3', cred.access_key_id) for cred in self.s3]
         )
         print_table(data, ('Type', 'Name'))
 

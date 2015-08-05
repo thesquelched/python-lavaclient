@@ -33,8 +33,7 @@ from lavaclient import error
 from lavaclient.validators import Length, Range, List
 from lavaclient.util import (CommandLine, argument, command, display_table,
                              coroutine, create_socks_proxy, expand, confirm,
-                             display, create_ssh_tunnel, display_result,
-                             deprecation)
+                             display, create_ssh_tunnel, display_result)
 from lavaclient.log import NullHandler
 
 
@@ -107,7 +106,7 @@ class ClusterCreateCredential(Config):
                  validator=Length(min=2, max=255))
 
 
-class ClusterCreateCredential(Config):
+class ClusterCreateConnector(Config):
 
     type = Field(six.text_type, required=True)
     credential = Field(ClusterCreateCredential, required=True)
@@ -133,8 +132,7 @@ class ClusterCreateRequest(Config):
     stack_id = Field(six.text_type, required=True)
     node_groups = ListField(ClusterCreateNodeGroups)
     scripts = ListField(ClusterCreateScript)
-    connectors = ListField(ClusterCreateCredential)
-    credentials = ListField(ClusterCreateCredential)
+    connectors = ListField(ClusterCreateConnector)
 
 
 class ClusterResizeRequest(Config):
@@ -194,8 +192,8 @@ def elapsed_minutes(start):
     return (datetime.now() - start).total_seconds() / 60
 
 
-def parse_credential(value):
-    """Parse command-line credential string, e.g. `cloud_files=my_files`"""
+def parse_connector(value):
+    """Parse command-line connector string, e.g. `cloud_files=my_files`"""
     match = re.match(r'([A-Za-z]\w*)=([A-Za-z]\w*)$', value)
     if not match:
         raise argparse.ArgumentTypeError('Must be in the form of type=name')
@@ -258,7 +256,7 @@ class Resource(resource.Resource):
 
     def create(self, name, stack_id, username=None, ssh_keys=None,
                user_scripts=None, node_groups=None, connectors=None,
-               wait=False, credentials=None):
+               wait=False):
         """
         Create a cluster
 
@@ -275,11 +273,8 @@ class Resource(resource.Resource):
                             supported attributes are `flavor_id` and `count`
         :param user_scripts: List of user script ID's; See
                              :meth:`lavaclient.api.scripts.Resource.create`
-        :param credentials: List of credentials to use. Each item must be a
-                            dictionary of `(type, name)` pairs
         :param connectors: List of connector credentials to use. Each item
-                           must be a dictionary of `(type, name)` pairs.
-                           Deprecated in favor of `credentials`
+                           must be a dictionary of `(type, name)` pairs
         :param wait: If `True`, wait for the cluster to become active before
                      returning
         :returns: :class:`~lavaclient.api.response.ClusterDetail`
@@ -288,13 +283,6 @@ class Resource(resource.Resource):
             ssh_keys = [DEFAULT_SSH_KEY]
         if username is None:
             username = getuser()
-        if connectors is None:
-            connectors = []
-        if credentials is None:
-            credentials = []
-
-        if connectors:
-            deprecation('connectors are deprecated; use credentials')
 
         data = dict(
             name=name,
@@ -309,12 +297,12 @@ class Resource(resource.Resource):
         if user_scripts:
             data.update(scripts=[{'id': script} for script in user_scripts])
 
-        if connectors or credentials:
+        if connectors:
             cdata = []
-            for credential in connectors + credentials:
-                ctype, name = six.next(six.iteritems(credential))
+            for connector in connectors:
+                ctype, name = six.next(six.iteritems(connector))
                 cdata.append({'type': ctype, 'credential': {'name': name}})
-            data.update(credentials=cdata)
+            data.update(connectors=cdata)
 
         request_data = self._marshal_request(
             data, ClusterCreateRequest, wrapper='cluster')
@@ -438,13 +426,10 @@ class Resource(resource.Resource):
                  'node group ID for the stack and the key-value pairs are '
                  'options to specify for that node group. Current valid '
                  'options are `count` and `flavor_id`'),
-        credentials=argument(
-            '--credential', action='append', type=parse_credential,
-            help='Credentials to use in the cluster. Each must be in the '
-                 'form of `type=name`. See `lava credentials`'),
         connectors=argument(
-            '--connector', action='append', type=parse_credential,
-            help='Deprecated'),
+            '--connector', action='append', type=parse_connector,
+            help='Connector credentials to use in the cluster. Each must be '
+                 'in the form of `type=name`. See `lava credentials`'),
         wait=argument(
             action='store_true',
             help='Wait for the cluster to become active'
@@ -453,7 +438,7 @@ class Resource(resource.Resource):
     @display_table(ClusterDetail)
     def _create(self, name, stack_id, username=None, ssh_keys=None,
                 user_scripts=None, node_groups=None, connectors=None,
-                wait=False, credentials=None):
+                wait=False):
         """
         CLI-only; cluster create command
         """
@@ -461,15 +446,8 @@ class Resource(resource.Resource):
             ssh_keys = [DEFAULT_SSH_KEY]
 
         try:
-            return self.create(name,
-                               stack_id,
-                               username=username,
-                               ssh_keys=ssh_keys,
-                               user_scripts=user_scripts,
-                               node_groups=node_groups,
-                               connectors=connectors,
-                               wait=wait,
-                               credentials=credentials)
+            return self.create(name, stack_id, username, ssh_keys,
+                               user_scripts, node_groups, connectors, wait)
         except error.RequestError as exc:
             if self._args.headless or not (
                     ssh_keys == [DEFAULT_SSH_KEY] and (
@@ -482,15 +460,8 @@ class Resource(resource.Resource):
         # cluster again
         self._create_default_ssh_credential()
 
-        return self.create(name,
-                           stack_id,
-                           username=username,
-                           ssh_keys=ssh_keys,
-                           user_scripts=user_scripts,
-                           node_groups=node_groups,
-                           connectors=connectors,
-                           wait=wait,
-                           credentials=credentials)
+        return self.create(name, stack_id, username, ssh_keys,
+                           user_scripts, node_groups, connectors, wait)
 
     @command(
         parser_options=dict(

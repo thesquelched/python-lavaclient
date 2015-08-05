@@ -13,8 +13,7 @@ def test_list(print_table_, mock_client, credentials_response):
     (data, header), kwargs = print_table_.call_args
     assert list(data) == [('SSH Key', 'mykey'),
                           ('Cloud Files', 'username'),
-                          ('Amazon S3', 'access_key_id'),
-                          ('Ambari', 'username')]
+                          ('Amazon S3', 'access_key_id')]
     assert header == ('Type', 'Name')
     assert 'title' not in kwargs
 
@@ -45,7 +44,8 @@ def test_list_cloud_files(print_table, mock_client,
 
 
 @patch('sys.argv', ['lava', 'credentials', 'list_s3'])
-def test_list_s3(print_table, mock_client, s3_creds_response):
+def test_list_s3(print_table, mock_client,
+                 s3_creds_response):
     mock_client._request.return_value = s3_creds_response
     main()
 
@@ -53,18 +53,6 @@ def test_list_s3(print_table, mock_client, s3_creds_response):
     (data, header), kwargs = print_table.call_args
     assert list(data) == [['Amazon S3', 'access_key_id']]
     assert header == ('Type', 'Access Key ID')
-    assert kwargs['title'] is None
-
-
-@patch('sys.argv', ['lava', 'credentials', 'list_ambari'])
-def test_list_ambari(print_table, mock_client, ambari_creds_response):
-    mock_client._request.return_value = ambari_creds_response
-    main()
-
-    assert print_table.call_count == 1
-    (data, header), kwargs = print_table.call_args
-    assert list(data) == [['Ambari', 'username']]
-    assert header == ['Type', 'Username']
     assert kwargs['title'] is None
 
 
@@ -109,19 +97,6 @@ def test_create_s3(print_single_table, mock_client,
     assert kwargs['title'] is None
 
 
-@patch('sys.argv', ['lava', 'credentials', 'create_ambari', 'username',
-                    'password'])
-def test_create_ambari(print_single_table, mock_client, ambari_cred_response):
-    mock_client._request.return_value = ambari_cred_response
-    main()
-
-    assert print_single_table.call_count == 1
-    (data, header), kwargs = print_single_table.call_args
-    assert data == ['Ambari', 'username']
-    assert header == ['Type', 'Username']
-    assert kwargs['title'] is None
-
-
 @patch('sys.argv', ['lava', 'credentials', 'update_ssh_key', 'name',
                     'x' * 50])
 def test_update_ssh_key(print_single_table, mock_client, ssh_key_response):
@@ -151,7 +126,8 @@ def test_update_cloud_files(print_single_table, mock_client,
 
 @patch('sys.argv', ['lava', 'credentials', 'update_s3', 'a' * 20,
                     'x' * 40])
-def test_update_s3(print_single_table, mock_client, s3_cred_response):
+def test_update_s3(print_single_table, mock_client,
+                   s3_cred_response):
     mock_client._request.return_value = s3_cred_response
     main()
 
@@ -159,19 +135,6 @@ def test_update_s3(print_single_table, mock_client, s3_cred_response):
     (data, header), kwargs = print_single_table.call_args
     assert data == ['Amazon S3', 'access_key_id']
     assert header == ('Type', 'Access Key ID')
-    assert kwargs['title'] is None
-
-
-@patch('sys.argv', ['lava', 'credentials', 'update_ambari', 'username',
-                    'password'])
-def test_update_ambari(print_single_table, mock_client, ambari_cred_response):
-    mock_client._request.return_value = ambari_cred_response
-    main()
-
-    assert print_single_table.call_count == 1
-    (data, header), kwargs = print_single_table.call_args
-    assert data == ['Ambari', 'username']
-    assert header == ['Type', 'Username']
     assert kwargs['title'] is None
 
 
@@ -190,15 +153,9 @@ def test_delete_cloud_files(mock_client):
     main()
 
 
-@patch('sys.argv', ['lava', 'credentials', 'delete_s3', 'access_key_id'])
+@patch('sys.argv', ['lava', 'credentials', 'delete_s3',
+                    'username'])
 @patch('lavaclient.api.credentials.confirm', MagicMock(return_value=True))
 def test_delete_s3(mock_client):
-    mock_client._request.return_value = None
-    main()
-
-
-@patch('sys.argv', ['lava', 'credentials', 'delete_ambari', 'username'])
-@patch('lavaclient.api.credentials.confirm', MagicMock(return_value=True))
-def test_delete_ambari(mock_client):
     mock_client._request.return_value = None
     main()
