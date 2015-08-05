@@ -4,6 +4,12 @@ import pytest
 from lavaclient import client
 
 
+@pytest.fixture(scope='session', autouse=True)
+def not_piped():
+    patch('lavaclient.cli.sys.stdout.isatty',
+          MagicMock(return_value=True)).start()
+
+
 @pytest.fixture
 def lavaclient():
     with patch.object(client.Lava, '_authenticate') as auth:
@@ -309,7 +315,7 @@ def node(link_response):
         'created': '2014-01-01',
         'updated': None,
         'flavor_id': 'flavor_id',
-        'node_group': [],
+        'node_group': 'node_group',
         'addresses': {
             'public': [
                 {

@@ -16,11 +16,12 @@ import sys
 import getpass
 import logging
 import os
+import figgis
 
 from lavaclient._version import __version__
 from lavaclient.client import Lava
 from lavaclient.error import LavaError
-from lavaclient.util import get_function_arguments, first_exists
+from lavaclient.util import get_function_arguments, first_exists, table_data
 from lavaclient.log import NullHandler
 from lavaclient.api import (clusters, limits, flavors, stacks, distros,
                             scripts, nodes, credentials)
@@ -98,12 +99,36 @@ def lava_shell(client, args):
     shell("Lava client is stored in 'lava' variable")
 
 
-def print_action(func, *args, **kwargs):
-    if hasattr(func, 'display'):
-        func.display(func.__self__, *args, **kwargs)
+def print_unformatted_table(args, result):
+    result_list = [result] if isinstance(result, figgis.Config) else result
+    response_class = result_list[0].__class__
+
+    data, long_header = table_data(result, response_class)
+    header = [item.replace(' ', '_').lower() for item in long_header]
+
+    delim = six.text_type(args.delimiter)
+
+    six.print_(delim.join(header),
+               file=sys.stdout if args.show_header else sys.stderr)
+
+    for row in data:
+        six.print_(delim.join(six.text_type(item).replace(',', ' ')
+                              for item in row))
+
+
+def print_action(func, args, *f_args, **f_kwargs):
+    if args.pretty_print and hasattr(func, 'display'):
+        func.display(func.__self__, *f_args, **f_kwargs)
     else:
-        result = func(*args, **kwargs)
-        if result is not None:
+        result = func(*f_args, **f_kwargs)
+        if not result:
+            return
+
+        if isinstance(result, figgis.Config) or (
+                isinstance(result, (list, tuple)) and
+                all(isinstance(item, figgis.Config) for item in result)):
+            print_unformatted_table(args, result)
+        else:
             six.print_(result)
 
 
@@ -113,7 +138,7 @@ def call_action(func, args):
     f_args = [getattr(args, name) for name in required]
     f_kwargs = dict((name, getattr(args, name)) for name in optional)
 
-    return print_action(func, *f_args, **f_kwargs)
+    return print_action(func, args, *f_args, **f_kwargs)
 
 
 def print_auth_token(client, args):
@@ -151,14 +176,14 @@ def initialize_logging(args):  # pragma: nocover
         logging.basicConfig(level=logging.DEBUG)
 
         # Do crazy verbose logging for HTTP connections
-        try:
-            import http.client as http_client
-        except ImportError:
-            # Python 2
-            import httplib as http_client
+        if args.debug > 1:
+            try:
+                import http.client as http_client
+            except ImportError:
+                # Python 2
+                import httplib as http_client
 
-        http_client.HTTPConnection.debuglevel = 1
-
+            http_client.HTTPConnection.debuglevel = 1
     try:
         logging.captureWarnings(True)
     except AttributeError:
@@ -169,7 +194,43 @@ def initialize_logging(args):  # pragma: nocover
     logging.getLogger('iso8601').setLevel(logging.CRITICAL)
 
 
+def with_opposites(parser, dest, *options, **kwargs):
+    """
+    Generate a mutually exclusive group comprised of the option with the given
+    strings and their opposites.
+
+    For example, `with_opposites(p, 'foo', '--foo', '-f')` creates the
+    following:
+
+        --foo, -f: store true
+        --no-foo, -F: store false
+    """
+    if 'dest' in kwargs or 'action' in kwargs:
+        raise ValueError('dest and action options are not allowed')
+    if 'help' not in kwargs:
+        raise ValueError('help is required')
+
+    helpstr = kwargs.pop('help')
+
+    opposite = []
+    for opt in options:
+        if opt.startswith('--'):
+            opposite.append('--no-' + opt.lstrip('-'))
+        elif opt[0] == '-' and not opt[1:].startswith('-'):
+            opposite.append(opt.upper())
+        else:
+            raise ValueError('Invalid option string format: {0}'.format(opt))
+
+    parser.add_argument(*options, action='store_true', dest=dest, help=helpstr,
+                        **kwargs)
+    parser.add_argument(*opposite, action='store_false', dest=dest,
+                        help='Opposite of {0}'.format(', '.join(options)),
+                        **kwargs)
+
+
 def parse_argv():
+    pipe_out = not sys.stdout.isatty()
+
     # Suppress setting attributes on the namespace from subparser options if
     # they are not specified, which allows us to have the same general options
     # on all parsers/subparsers, making their order not matter.
@@ -189,8 +250,9 @@ def parse_argv():
                              help='Tenant ID')
         general.add_argument('--version',
                              help='Print client version')
-        general.add_argument('--debug', '-d', action='store_true',
-                             help='Print debugging information')
+        general.add_argument('--debug', '-d', action='count',
+                             help='Print debugging information; use multiple '
+                                  'times for more verbose logging')
         general.add_argument('--endpoint',
                              help='API endpoint URL')
         general.add_argument('--auth-url',
@@ -205,10 +267,23 @@ def parse_argv():
                              dest='verify_ssl',
                              help='Turn of SSL cert validation')
 
+        fmt = prs.add_argument_group('Formatting Options')
+        with_opposites(fmt, 'pretty_print', '--format', '-f',
+                       help='Show a formatted table in the output')
+        with_opposites(fmt, 'show_header', '--header',
+                       help='When outputting an unformatted table, print the '
+                            'header to stdout instead of stderr')
+        fmt.add_argument('--delimiter', '-l',
+                         help='Column delimiter to use when formatting is '
+                              'disabled')
+
     # Ugly hack; add defaults only to main parser so as to not override values
     # via child parsers
     parser.set_defaults(enable_cli=True,
-                        verify_ssl=not os.environ.get('LAVA_INSECURE'))
+                        verify_ssl=not os.environ.get('LAVA_INSECURE'),
+                        delimiter=',',
+                        show_header=False,
+                        pretty_print=not pipe_out)
 
     subparsers = parser.add_subparsers(title='Commands')
 
