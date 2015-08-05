@@ -1,3 +1,16 @@
+0.2.4
+-----
+* General
+    * Add ssh_tunnel method/command to help set up SSH tunnels to a cluster
+    * Add additional debugging levels
+    * Get V2 API endpoints from service catalog
+
+* CLI
+    * Improve display for node components
+    * Add confirmations for delete methods, e.g. `clusters delete`
+    * Piping output to another command disables pretty printing so that it is
+      easier to parse
+
 0.2.3
 -----
 * Fix cluster create bug in CLI in which missing credentials are not detected

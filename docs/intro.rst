@@ -50,7 +50,7 @@ other settings.  However, you can use
 `supernova <http://supernova.readthedocs.org/en/latest/>`_ to help manage these
 settings.  First, install `supernova`::
 
-    $ pip install git+https://github.com/major/supernova.git#egg=supernova
+    $ pip install git+https://github.com/major/supernova.git@1.0.8#egg=supernova
 
 .. warning::
 
