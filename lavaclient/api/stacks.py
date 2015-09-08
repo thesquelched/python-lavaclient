@@ -17,7 +17,8 @@ from figgis import Config, ListField, Field
 from lavaclient.api import resource
 from lavaclient.api.response import Stack, StackDetail
 from lavaclient.validators import Length, List, Range
-from lavaclient.util import CommandLine, command, display_table
+from lavaclient.util import (CommandLine, command, display_table, argument,
+                             read_json, confirm, display_result)
 from lavaclient.log import NullHandler
 
 
@@ -139,9 +140,9 @@ representing a list of JSON objects in the following format:
 Here's an example with two node groups:
 
     [{{"id": "master", "count": 1, "flavor_id": "hadoop1-7",
-      "components: [{{"name": "Namenode"}}, {{"name": "ResourceManager"}}]}},
+      "components": [{{"name": "Namenode"}}, {{"name": "ResourceManager"}}]}},
      {{"id": "slave",
-      "components: [{{"name": "NodeManager"}}]}}]
+      "components": [{{"name": "NodeManager"}}]}}]
 """.format(services=indent(Service.describe()),
            node_groups=indent(NodeGroup.describe()))
 
@@ -182,61 +183,72 @@ class Resource(resource.Resource):
             StackResponse,
             wrapper='stack')
 
-    # @command(
-    #     parser_options=dict(
-    #         description='Create a custom stack',
-    #         epilog=SERVICE_CREATE_EPILOG,
-    #     ),
-    #     name=argument(help='A stack identifier, e.g. MY_HADOOP_STACK'),
-    #     distro=argument(help='An existing distribution ID; see '
-    #                          '`lava distros list`'),
-    #     services=argument(type=read_json,
-    #                       help='JSON data string or path to file containing '
-    #                            'JSON data; see SERVICES'),
-    #     node_groups=argument(type=read_json,
-    #                          help='JSON data string or p ath to file '
-    #                               'containing JSON data; see NODE GROUPS'),
-    #     description=argument(help='A brief description of the purpose '
-    #                               'of the stack')
-    # )
-    # @display_table(StackDetail)
-    # def create(self, name, distro, services, node_groups=None,
-    #            description=None):
-    #     """
-    #     Create a stack
+    @command(
+        parser_options=dict(
+            description='Create a custom stack',
+            epilog=SERVICE_CREATE_EPILOG,
+        ),
+        name=argument(help='A stack identifier, e.g. MY_HADOOP_STACK'),
+        distro=argument(help='An existing distribution ID; see '
+                             '`lava distros list`'),
+        services=argument(type=read_json,
+                          help='JSON data string or path to file containing '
+                               'JSON data; see SERVICES'),
+        node_groups=argument(type=read_json,
+                             help='JSON data string or p ath to file '
+                                  'containing JSON data; see NODE GROUPS'),
+        description=argument(help='A brief description of the purpose '
+                                  'of the stack')
+    )
+    @display_table(StackDetail)
+    def create(self, name, distro, services, node_groups=None,
+               description=None):
+        """
+        Create a stack
 
-    #     :param name: Stack name
-    #     :param distro: Valid distro identifier
-    #     :param services: List of services. Each should have a name and
-    #                      optionally a list of modes
-    #     :param node_groups: List of node groups for the cluster
-    #     :returns: :class:`~lavaclient.api.response.StackDetail`
-    #     """
-    #     data = dict(
-    #         name=name,
-    #         distro=distro,
-    #         services=services,
-    #     )
-    #     if node_groups:
-    #         data.update(node_groups=node_groups)
-    #     if description:
-    #         data.update(description=description)
+        :param name: Stack name
+        :param distro: Valid distro identifier
+        :param services: List of services. Each should have a name and
+                         optionally a list of modes
+        :param node_groups: List of node groups for the cluster
+        :returns: :class:`~lavaclient.api.response.StackDetail`
+        """
+        data = dict(
+            name=name,
+            distro=distro,
+            services=services,
+        )
+        if node_groups:
+            data.update(node_groups=node_groups)
+        if description:
+            data.update(description=description)
 
-    #     request_data = self._marshal_request(
-    #         data, CreateStackRequest, wrapper='stack')
+        request_data = self._marshal_request(
+            data, CreateStackRequest, wrapper='stack')
 
-    #     return self._parse_response(
-    #         self._client._post('stacks', json=request_data),
-    #         StackResponse,
-    #         wrapper='stack')
+        return self._parse_response(
+            self._client._post('stacks', json=request_data),
+            StackResponse,
+            wrapper='stack')
 
-    # @command(parser_options=dict(
-    #     description='Delete a custom stack',
-    # ))
-    # def delete(self, stack_id):
-    #     """
-    #     Delete a stack
+    @command(
+        parser_options=dict(description='Delete a custom stack'),
+        force=argument(action='store_true',
+                       help='Do not show confirmation dialog'),
+    )
+    def _delete(self, stack_id, force=False):
+        if not force:
+            display_result(self.get(stack_id), StackDetail)
 
-    #     :param stack_id: Stack ID
-    #     """
-    #     self._client._delete('stacks/{0}'.format(stack_id))
+            if not confirm('Delete this stack?'):
+                return
+
+        self.delete(stack_id)
+
+    def delete(self, stack_id):
+        """
+        Delete a stack
+
+        :param stack_id: Stack ID
+        """
+        self._client._delete('stacks/{0}'.format(stack_id))

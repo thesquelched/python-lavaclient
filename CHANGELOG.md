@@ -2,6 +2,7 @@
 -----
 * General
     * Add ambari credential management methods
+    * Re-enabled stacks create/delete
 
 0.2.4
 -----

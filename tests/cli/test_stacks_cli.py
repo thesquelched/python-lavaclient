@@ -1,6 +1,6 @@
 import pytest
 import json
-from mock import patch
+from mock import patch, MagicMock
 from datetime import datetime
 
 from lavaclient.cli import main
@@ -70,8 +70,6 @@ def test_get(print_table, print_single_table, mock_client, stack_response):
 ])
 def test_create(services, node_groups, print_table, print_single_table,
                 mock_client, stack_response):
-    pytest.skip('Create is not yet supported')
-
     mock_client._request.return_value = stack_response
 
     args = ['lava', 'stacks', 'create', 'name', 'distro',
@@ -109,10 +107,10 @@ def test_create(services, node_groups, print_table, print_single_table,
     assert kwargs['title'] == 'Node Groups'
 
 
+@patch('lavaclient.api.stacks.confirm', MagicMock(return_value=True))
 @patch('sys.argv', ['lava', 'stacks', 'delete', 'stack_id'])
-def test_delete(mock_client):
-    pytest.skip('Delete is not yet supported')
-
+def test_delete(print_table, print_single_table, mock_client, stack_response):
+    mock_client._request.return_value = stack_response
     main()
     args = mock_client._request.call_args[0]
 
