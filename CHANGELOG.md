@@ -1,3 +1,8 @@
+0.2.5
+-----
+* General
+    * Add ambari credential management methods
+
 0.2.4
 -----
 * General

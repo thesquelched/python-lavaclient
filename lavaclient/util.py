@@ -28,6 +28,7 @@ import base64
 import os.path
 import six.moves.urllib as urllib
 import socks
+import warnings
 from sockshandler import SocksiPyHandler
 from functools import wraps
 from collections import namedtuple
@@ -728,3 +729,7 @@ def confirm(message, default_yes=False):
         six.print_('Invalid selection: {0}'.format(resp))
 
     return resp == 'y'
+
+
+def deprecation(message):
+    warnings.warn(message, DeprecationWarning, stacklevel=2)

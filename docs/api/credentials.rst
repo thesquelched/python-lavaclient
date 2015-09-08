@@ -26,7 +26,7 @@ manually::
 
 Similarly, you can add credentials to access other services from your clusters,
 e.g. `Cloud Files <http://www.rackspace.com/cloud/files>`_, which you can
-enable using the `connectors` argument when creating a cluster::
+enable using the `credentials` argument when creating a cluster::
 
     >>> cloudfiles = lava.credentials.create_cloud_files('cloudfiles_user',
     ...                                                  'cloudfiles_apikey')
@@ -36,8 +36,13 @@ enable using the `connectors` argument when creating a cluster::
     ...     'HADOOP_HDP2_2',
     ...     username='scott',
     ...     ssh_keys=[ssh_key.id],
-    ...     connectors=[{'cloud_files': cloudfiles.id}],
+    ...     credentials=[{'cloud_files': cloudfiles.id}],
     ...     node_groups={'slave': {'count': 3, 'flavor_id': 'hadoop1-7'}})
+
+.. note::
+
+    The `connectors` argument has been replaced by `credentials`, which shares
+    the same format.
 
 .. note::
 
@@ -47,8 +52,8 @@ enable using the `connectors` argument when creating a cluster::
 
 .. note::
 
-    The currently supported credential types are SSH , Cloud Files, and Amazon
-    S3.
+    The currently supported credential types are SSH, Cloud Files, Ambari, and
+    Amazon S3.
 
 API Reference
 -------------
@@ -74,6 +79,11 @@ API Reference
    :member-order: groupwise
 
 .. autoclass:: S3Credential()
+   :members:
+   :inherited-members:
+   :member-order: groupwise
+
+.. autoclass:: AmbariCredential()
    :members:
    :inherited-members:
    :member-order: groupwise
