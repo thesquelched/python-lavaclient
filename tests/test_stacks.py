@@ -47,8 +47,6 @@ def test_get(lavaclient, stack_response):
 
 def test_create(lavaclient, service_create, stack_response,
                 create_node_group):
-    pytest.skip('create is not yet supported')
-
     with patch.object(lavaclient, '_request') as request:
         request.return_value = stack_response
         resp = lavaclient.stacks.create(
@@ -78,8 +76,6 @@ def test_create(lavaclient, service_create, stack_response,
 
 
 def test_delete(lavaclient):
-    pytest.skip('Delete is not yet supported')
-
     with patch.object(lavaclient, '_request') as request:
         request.return_value = None
         resp = lavaclient.stacks.delete('stack_id')

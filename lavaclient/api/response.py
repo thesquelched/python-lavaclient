@@ -411,11 +411,11 @@ class BaseStack(object):
         """
         return self._client.stacks.get(self.id)
 
-    # def delete(self):
-    #     """
-    #     Delete this stack.
-    #     """
-    #     return self._client.stacks.delete(self.id)
+    def delete(self):
+        """
+        Delete this stack.
+        """
+        return self._client.stacks.delete(self.id)
 
 
 @prettify('services')
@@ -459,6 +459,19 @@ class StackDetail(Stack, ReprMixin, BaseStack):
         if self.node_groups:
             display_result(self.node_groups, StackNodeGroup,
                            title='Node Groups')
+
+            self._display_components()
+
+    def _display_components(self):
+        rows = []
+        for group in self.node_groups:
+            group_column = chain([group.id], repeat(''))
+            rows.extend(
+                no_nulls((grp, comp['name']))
+                for grp, comp in six.moves.zip(group_column, group.components)
+            )
+
+        print_table(rows, ('Node Group', 'Name'), title='Components')
 
     @property
     def _node_group_ids(self):
