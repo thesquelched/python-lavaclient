@@ -110,7 +110,7 @@ def test_create_s3(print_single_table, mock_client,
 
 
 @patch('sys.argv', ['lava', 'credentials', 'create_ambari', 'username',
-                    'password'])
+                    '--ambari-password', 'password'])
 def test_create_ambari(print_single_table, mock_client, ambari_cred_response):
     mock_client._request.return_value = ambari_cred_response
     main()
@@ -163,7 +163,7 @@ def test_update_s3(print_single_table, mock_client, s3_cred_response):
 
 
 @patch('sys.argv', ['lava', 'credentials', 'update_ambari', 'username',
-                    'password'])
+                    '--ambari-password', 'password'])
 def test_update_ambari(print_single_table, mock_client, ambari_cred_response):
     mock_client._request.return_value = ambari_cred_response
     main()
