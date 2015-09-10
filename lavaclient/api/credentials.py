@@ -16,6 +16,7 @@ Credential management, e.g. SSH keys, Cloud Files
 
 import six
 import logging
+from getpass import getpass
 from figgis import Config, ListField, Field
 
 from lavaclient.api import resource
@@ -281,9 +282,15 @@ class Resource(resource.Resource):
             description='Add credentials for Ambari'
         ),
         username=argument(help='Ambari username'),
-        password=argument(help='Password')
+        ambari_password=argument(help='Password')
     )
     @display_table(AmbariCredential)
+    def _create_ambari(self, username, ambari_password=None):
+        if ambari_password is None:
+            ambari_password = getpass('Password for {0}: '.format(username))
+
+        return self.create_ambari(username, ambari_password)
+
     def create_ambari(self, username, password):
         """
         Create credentials for Ambari access
@@ -402,9 +409,15 @@ class Resource(resource.Resource):
             description='Update credentials for Ambari'
         ),
         username=argument(help='Username for existing Ambari credential'),
-        password=argument(help='Password')
+        ambari_password=argument(help='Password', required=False)
     )
     @display_table(AmbariCredential)
+    def _update_ambari(self, username, ambari_password=None):
+        if ambari_password is None:
+            ambari_password = getpass('Password for {0}: '.format(username))
+
+        return self.update_ambari(username, ambari_password)
+
     def update_ambari(self, username, password):
         """
         Update credentials for Ambari access
