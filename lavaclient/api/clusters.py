@@ -627,10 +627,10 @@ class Resource(resource.Resource):
 
     def _cluster_nodes(self, cluster_id, wait=False):
         """
-        Return `(cluster, nodes)`, where `nodes` is a list of all nodes in the
-        cluster. If the cluster is not ACTIVE/ERROR and wait is `True`, the
-        function will block until it becomes active; otherwise, an exception
-        is thrown.
+        Return `(cluster, nodes)`, where `nodes` is a list of all non-Ambari
+        nodes in the cluster. If the cluster is not ACTIVE/ERROR and wait is
+        `True`, the function will block until it becomes active; otherwise, an
+        exception is thrown.
         """
         cluster = self.get(cluster_id)
         status = cluster.status.upper()
@@ -645,7 +645,9 @@ class Resource(resource.Resource):
 
             self.wait(cluster_id)
 
-        return cluster, self.nodes(cluster_id)
+        nodes = [node for node in self.nodes(cluster_id)
+                 if node.name.lower() != 'ambari']
+        return cluster, nodes
 
     @command(
         parser_options=dict(

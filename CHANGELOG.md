@@ -1,3 +1,7 @@
+0.2.6
+-----
+* Fix SSH methods bug in which ambari node is targeted
+
 0.2.5
 -----
 * General
