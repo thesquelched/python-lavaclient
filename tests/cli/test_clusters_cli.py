@@ -171,6 +171,49 @@ def test_resize(args, node_groups, print_table, print_single_table,
         assert kwargs['json']['cluster'].get('node_groups') == node_groups
 
 
+@pytest.mark.parametrize('args,expected', [
+    (['--credential', 's3=s3_cred_update'],
+     [{'name': 's3_cred_update', 'type': 's3'}]),
+    (['--credential', 'ssh_keys=ssh_cred_update',
+      '--credential', 'cloud_files=cf_cred_update'],
+     [{'name': 'ssh_cred_update', 'type': 'ssh_keys'},
+      {'name': 'cf_cred_update', 'type': 'cloud_files'}])
+])
+def test_update_credentials(args, expected, print_table, print_single_table,
+                            mock_client, cluster_response):
+    mock_client._request.return_value = cluster_response
+
+    base_args = ['lava', 'clusters', 'update_credentials', 'cluster_id']
+
+    with patch('sys.argv', base_args + args):
+        main()
+
+        kwargs = mock_client._request.call_args[1]
+        creds = kwargs['json']['cluster']['credentials']
+        assert len(creds) == len(expected)
+        for cred in creds:
+            assert cred in expected
+
+
+@patch('lavaclient.api.clusters.confirm', MagicMock(return_value=True))
+def test_delete_ssh_credentials(print_table, print_single_table,
+                                mock_client, cluster_response):
+    mock_client._request.return_value = cluster_response
+
+    args = ['lava', 'clusters', 'delete_ssh_credentials', 'cluster_id',
+            'delete_this_key', 'delete_that_key']
+    expected = {'remove_credentials':
+                [{'name': 'delete_this_key',
+                  'type': 'ssh_keys'},
+                 {'name': 'delete_that_key',
+                  'type': 'ssh_keys'}]}
+    with patch('sys.argv', args):
+        main()
+
+        kwargs = mock_client._request.call_args[1]
+        assert kwargs['json']['cluster'] == expected
+
+
 @patch('sys.argv', ['lava', 'clusters', 'delete', 'cluster_id'])
 @patch('lavaclient.api.clusters.confirm', MagicMock(return_value=True))
 def test_delete(mock_client, cluster_response, print_single_table):

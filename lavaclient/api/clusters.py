@@ -24,6 +24,7 @@ import sys
 import socket
 import os.path
 from getpass import getuser
+from collections import defaultdict
 from datetime import datetime, timedelta
 from figgis import Config, ListField, Field, PropertyError, ValidationError
 
@@ -101,6 +102,14 @@ class ClusterCreateNodeGroups(Config):
     flavor_id = Field(six.text_type)
 
 
+class ClusterUpdateCredential(Config):
+
+    __allow_extra__ = False
+
+    name = Field(six.text_type, required=True)
+    type = Field(six.text_type, required=True)
+
+
 class ClusterCreateCredential(Config):
 
     name = Field(six.text_type, required=True,
@@ -151,6 +160,16 @@ class ClusterUpdateRequest(Config):
     cluster = Field(ClusterResizeRequest)
 
 
+class ClusterCredentialsRequest(Config):
+
+    credentials = ListField(ClusterUpdateCredential)
+
+
+class ClusterCredentialsRemovalRequest(Config):
+
+    remove_credentials = ListField(ClusterUpdateCredential)
+
+
 ######################################################################
 # API Resource
 ######################################################################
@@ -196,7 +215,7 @@ def elapsed_minutes(start):
 
 def parse_credential(value):
     """Parse command-line credential string, e.g. `cloud_files=my_files`"""
-    match = re.match(r'([A-Za-z]\w*)=([A-Za-z]\w*)$', value)
+    match = re.match(r'([A-Za-z]\w*)=(.+)$', value)
     if not match:
         raise argparse.ArgumentTypeError('Must be in the form of type=name')
 
@@ -379,6 +398,121 @@ class Resource(resource.Resource):
         cluster = self._parse_response(
             self._client._put('clusters/{0}'.format(cluster_id),
                               json=request_data),
+            ClusterResponse,
+            wrapper='cluster')
+
+        if wait:
+            return self.wait(cluster.id)
+
+        return cluster
+
+    @command(
+        parser_options=dict(
+            description='Update the connector credentials for a cluster',
+        ),
+        credentials=argument(
+            '--credential',
+            type=parse_credential, action='append',
+            help='Credentials to use in the cluster. Only the credentials you '
+            'specify are modified. No credentials are removed. Each must be'
+            ' in the form of `type=name`. See `lava credentials`'
+        ),
+        wait=argument(
+            action='store_true',
+            help='Wait for the cluster to become active')
+    )
+    @display_table(ClusterDetail)
+    def _update_credentials(self, cluster_id, credentials=None, wait=False):
+        if not credentials:
+            raise error.RequestError("Must specify at least one credential")
+
+        creds = defaultdict(list)
+        for cred in credentials:
+            ctype, name = six.next(c for c in six.iteritems(cred))
+            creds[ctype].append(name)
+        return self.update_credentials(cluster_id, creds, wait)
+
+    def update_credentials(self, cluster_id, credentials=None, wait=False):
+        """
+        Update the credentials on a cluster
+
+        :param cluster_id: Cluster ID
+        :param credentials: The credential name to on update the cluster.
+                            Credentials must be a dict of {type: [name]} values
+        :param wait: If `True`, wait for the cluster to become active before
+                     returning
+        :returns: :class:`~lavaclient.api.response.ClusterDetail`
+        """
+        new_creds = []
+        for ctype in credentials:
+            names = credentials[ctype]
+            for name in names:
+                new_creds.append({'name': name, 'type': ctype})
+
+        request_data = self._marshal_request({'credentials': new_creds},
+                                             ClusterCredentialsRequest,
+                                             wrapper='cluster')
+
+        response = self._client._put('clusters/{0}'.format(cluster_id),
+                                     json=request_data)
+        cluster = self._parse_response(
+            response,
+            ClusterResponse,
+            wrapper='cluster')
+
+        if wait:
+            return self.wait(cluster.id)
+
+        return cluster
+
+    @command(
+        parser_options=dict(
+            description='Remove the specified ssh keys from a cluster cluster',
+        ),
+        keynames=argument(
+            metavar='keyname',
+            nargs='+',
+            help='Name of ssh credential to remove from the cluster'),
+        wait=argument(
+            action='store_true',
+            help='Wait for the cluster to become active'
+        ),
+        force=argument(
+            action='store_true',
+            help="Suppress delete confirmation dialog")
+    )
+    @display_table(ClusterDetail)
+    def _delete_ssh_credentials(self, cluster_id, keynames, wait=False,
+                                force=False):
+        if not force:
+            if not confirm('Remove these keys from this cluster?'):
+                return
+
+        return self.delete_ssh_credentials(cluster_id, keynames, wait)
+
+    def delete_ssh_credentials(self, cluster_id, keynames, wait):
+        """
+        Remove the specified SSH credentials from a cluster.
+
+        :param cluster_id: Cluster ID
+        :param keys: The ssh key names to remove from the cluster
+        :param wait: If `True`, wait for the cluster to become active before
+                     returning
+        :returns: :class:`~lavaclient.api.response.ClusterDetail`
+        """
+
+        creds = []
+
+        for name in keynames:
+            creds.append({'name': name, 'type': 'ssh_keys'})
+
+        request_data = self._marshal_request({'remove_credentials': creds},
+                                             ClusterCredentialsRemovalRequest,
+                                             wrapper='cluster')
+        response = self._client._put('clusters/{0}'.format(cluster_id),
+                                     json=request_data)
+        cluster = self._parse_response(
+            response,
             ClusterResponse,
             wrapper='cluster')
 
