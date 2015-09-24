@@ -12,13 +12,15 @@
 
 import logging
 import six
+from collections import defaultdict
 from figgis import Config, ListField, Field
 
 from lavaclient.api import resource
 from lavaclient.api.response import Stack, StackDetail
 from lavaclient.validators import Length, List, Range
 from lavaclient.util import (CommandLine, command, display_table, argument,
-                             read_json, confirm, display_result)
+                             read_json, confirm, display_result, print_table,
+                             display, table_data)
 from lavaclient.log import NullHandler
 
 
@@ -147,6 +149,33 @@ Here's an example with two node groups:
            node_groups=indent(NodeGroup.describe()))
 
 
+def display_stack_services(result):
+    service_stacks = defaultdict(set)
+    for stack in result:
+        for service in stack.services:
+            service_stacks[service.name].add(stack.id)
+
+    header = [''] + [six.text_type(i + 1)
+                     for i in six.moves.range(len(result))]
+
+    sorted_services = [(service, service_stacks[service])
+                       for service in sorted(service_stacks)]
+    rows = [
+        [service] + ['X' if stack.id in svc_stacks else '' for stack in result]
+        for service, svc_stacks in sorted_services]
+
+    print_table(rows, header, title='Services')
+
+
+def display_stacks(result):
+    data, header = table_data(result, Stack)
+    header = [''] + list(header)
+    data = [[i] + list(row) for i, row in enumerate(data, start=1)]
+
+    print_table(data, header, title='Stacks')
+    display_stack_services(result)
+
+
 @six.add_metaclass(CommandLine)
 class Resource(resource.Resource):
 
@@ -155,7 +184,7 @@ class Resource(resource.Resource):
     @command(parser_options=dict(
         description='List all existing stacks',
     ))
-    @display_table(Stack)
+    @display(display_stacks)
     def list(self):
         """
         List all stacks

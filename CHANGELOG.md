@@ -1,3 +1,8 @@
+0.2.7
+-----
+* CLI
+    * Improve stacks display
+
 0.2.6
 -----
 * Fix SSH methods bug in which ambari node is targeted

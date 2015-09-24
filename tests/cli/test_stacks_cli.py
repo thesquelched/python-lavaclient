@@ -4,29 +4,32 @@ from mock import patch, MagicMock
 from datetime import datetime
 
 from lavaclient.cli import main
-from lavaclient.api.response import Stack, StackDetail, StackNodeGroup
+from lavaclient.api.response import StackDetail, StackNodeGroup
+
+
+@pytest.fixture
+def print_table_(request):
+    patcher = patch('lavaclient.api.stacks.print_table')
+    request.addfinalizer(patcher.stop)
+    return patcher.start()
 
 
 @patch('sys.argv', ['lava', 'stacks', 'list'])
-def test_list(print_table, mock_client, stacks_response):
+def test_list(print_table_, mock_client, stacks_response):
     mock_client._request.return_value = stacks_response
     main()
 
-    (data, header), kwargs = print_table.call_args
+    assert print_table_.call_count == 2
+    (data, header), kwargs = print_table_.call_args_list[0]
     alldata = list(data)
     assert len(alldata) == 1
-    assert list(item[:4] for item in alldata) == [['stack_id',
+    assert list(item[:5] for item in alldata) == [[1,
+                                                   'stack_id',
                                                    'stack_name',
                                                    'distro',
                                                    'description']]
-    pieces = list(sorted(alldata[0][-1]
-                         .strip('[]')
-                         .strip('}{')
-                         .replace('\n', '')
-                         .split(',')))
-    assert pieces == ['modes=[mode1]', 'name=service_name']
-    assert header == Stack.table_header
-    assert kwargs['title'] is None
+    assert header == ['', 'ID', 'Name', 'Distro', 'Description']
+    assert kwargs['title'] is 'Stacks'
 
 
 @patch('sys.argv', ['lava', 'stacks', 'get', 'stack_id'])
@@ -38,7 +41,7 @@ def test_get(print_table, print_single_table, mock_client, stack_response):
     (data, header), kwargs = print_single_table.call_args
     assert data[:5] == ['stack_id', 'stack_name', 'distro',
                         datetime(2015, 1, 1), 'description']
-    assert data[6] == '[id]'
+    assert data[6] == 'id'
     pieces = list(sorted(data[5]
                          .strip('[]')
                          .strip('}{')
@@ -89,7 +92,7 @@ def test_create(services, node_groups, print_table, print_single_table,
     (data, header), kwargs = print_single_table.call_args
     assert data[:5] == ['stack_id', 'stack_name', 'distro',
                         datetime(2015, 1, 1), 'description']
-    assert data[6] == '[id]'
+    assert data[6] == 'id'
     pieces = list(sorted(data[5]
                          .strip('[]')
                          .strip('}{')
