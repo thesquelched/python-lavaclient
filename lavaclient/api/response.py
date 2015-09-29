@@ -20,7 +20,7 @@ from dateutil.parser import parse as dateparse
 from datetime import datetime
 
 from lavaclient.validators import Length, Range
-from lavaclient.util import (display_result, prettify, _prettify, ssh_to_host,
+from lavaclient.util import (display_result, prettify, ssh_to_host,
                              print_table, no_nulls)
 from lavaclient.log import NullHandler
 from lavaclient import error
@@ -418,11 +418,10 @@ class BaseStack(object):
         return self._client.stacks.delete(self.id)
 
 
-@prettify('services')
 class Stack(Config, ReprMixin, BaseStack):
 
-    table_columns = ('id', 'name', 'distro', '_description', '_services')
-    table_header = ('ID', 'Name', 'Distro', 'Description', 'Services')
+    table_columns = ('id', '_name', 'distro', '_description')
+    table_header = ('ID', 'Name', 'Distro', 'Description')
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
@@ -433,11 +432,15 @@ class Stack(Config, ReprMixin, BaseStack):
                          help='See: :class:`StackService`')
 
     @property
+    def _name(self):
+        return '\n'.join(textwrap.wrap(self.name, 25))
+
+    @property
     def _description(self):
-        return '\n'.join(textwrap.wrap(self.description, 50))
+        return '\n'.join(textwrap.wrap(self.description, 30))
 
 
-@prettify('node_groups')
+@prettify('node_groups', 'services')
 class StackDetail(Stack, ReprMixin, BaseStack):
 
     __inherits__ = [Stack]
@@ -474,8 +477,14 @@ class StackDetail(Stack, ReprMixin, BaseStack):
         print_table(rows, ('Node Group', 'Name'), title='Components')
 
     @property
+    def _description(self):
+        return '\n'.join(textwrap.wrap(self.description, 60))
+
+    @property
     def _node_group_ids(self):
-        return _prettify([group.id for group in self.node_groups])
+        return '\n'.join(
+            textwrap.wrap(', '.join(group.id for group in self.node_groups))
+        )
 
 
 class Distro(Config, ReprMixin):
