@@ -1,5 +1,7 @@
 0.3.7
 -----
+* CLI
+    * Show units for flavor memory and disk
 * Add support for user script status on individual nodes
 
 0.3.6
