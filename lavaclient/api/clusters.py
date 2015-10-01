@@ -496,12 +496,15 @@ class Resource(resource.Resource):
         parser_options=dict(
             description='Delete a cluster',
         ),
+        force=argument(action='store_true',
+                       help="Suppress delete confirmation dialog"),
     )
-    def _delete(self, cluster_id):
-        display_result(self.get(cluster_id), ClusterDetail)
+    def _delete(self, cluster_id, force=False):
+        if not force:
+            display_result(self.get(cluster_id), ClusterDetail)
 
-        if not confirm('Delete this cluster?'):
-            return
+            if not confirm('Delete this cluster?'):
+                return
 
         self.delete(cluster_id)
 

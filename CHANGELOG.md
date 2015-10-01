@@ -2,6 +2,7 @@
 -----
 * CLI
     * Improve stacks display
+    * Add --force options to delete methods to skip confirm dialog
 
 0.2.6
 -----

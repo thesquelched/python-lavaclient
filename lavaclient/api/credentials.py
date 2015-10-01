@@ -442,10 +442,12 @@ class Resource(resource.Resource):
 
     @command(
         parser_options=dict(description='Delete an SSH key'),
-        name=argument(help='SSH key name')
+        name=argument(help='SSH key name'),
+        do_confirm=argument('--force', action='store_false',
+                            help='Suppress delete confirmation dialog'),
     )
-    def _delete_ssh_key(self, name):
-        if not confirm('Delete SSH key {0}?'.format(name)):
+    def _delete_ssh_key(self, name, do_confirm=True):
+        if do_confirm and not confirm('Delete SSH key {0}?'.format(name)):
             return
 
         return self.delete_ssh_key(name)
@@ -460,10 +462,13 @@ class Resource(resource.Resource):
 
     @command(
         parser_options=dict(description='Delete a Cloud Files credential'),
-        username=argument(help='Cloud Files username')
+        username=argument(help='Cloud Files username'),
+        do_confirm=argument('--force', action='store_false',
+                            help='Suppress delete confirmation dialog'),
     )
-    def _delete_cloud_files(self, username):
-        if not confirm('Delete Cloud Files username {0}?'.format(username)):
+    def _delete_cloud_files(self, username, do_confirm=True):
+        if do_confirm and not confirm(
+                'Delete Cloud Files username {0}?'.format(username)):
             return
 
         return self.delete_cloud_files(username)
@@ -478,10 +483,13 @@ class Resource(resource.Resource):
 
     @command(
         parser_options=dict(description='Delete Amazon S3 credential'),
-        access_key_id=argument(help='Amazon S3 access key id')
+        access_key_id=argument(help='Amazon S3 access key id'),
+        do_confirm=argument('--force', action='store_false',
+                            help='Suppress delete confirmation dialog'),
     )
-    def _delete_s3(self, access_key_id):
-        if not confirm('Delete S3 access key {0}?'.format(access_key_id)):
+    def _delete_s3(self, access_key_id, do_confirm=True):
+        if do_confirm and not confirm(
+                'Delete S3 access key {0}?'.format(access_key_id)):
             return
 
         return self.delete_s3(access_key_id)
@@ -496,10 +504,13 @@ class Resource(resource.Resource):
 
     @command(
         parser_options=dict(description='Delete Ambari credential'),
-        username=argument(help='Ambari username')
+        username=argument(help='Ambari username'),
+        do_confirm=argument('--force', action='store_false',
+                            help='Suppress delete confirmation dialog'),
     )
-    def _delete_ambari(self, username):
-        if not confirm('Delete Ambari user {0}?'.format(username)):
+    def _delete_ambari(self, username, do_confirm=True):
+        if do_confirm and not confirm(
+                'Delete Ambari user {0}?'.format(username)):
             return
 
         return self.delete_ambari(username)

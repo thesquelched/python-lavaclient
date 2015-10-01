@@ -159,11 +159,13 @@ class Resource(resource.Resource):
             ScriptResponse,
             wrapper='script')
 
-    @command(parser_options=dict(
-        description='Delete a cluster script',
-    ))
-    def _delete(self, script_id):
-        if not confirm('Delete script {0}?'.format(script_id)):
+    @command(
+        parser_options=dict(description='Delete a cluster script'),
+        do_confirm=argument('--force', action='store_false',
+                            help='Suppress delete confirmation dialog'),
+    )
+    def _delete(self, script_id, do_confirm=True):
+        if do_confirm and not confirm('Delete script {0}?'.format(script_id)):
             return
 
         return self.delete(script_id)
