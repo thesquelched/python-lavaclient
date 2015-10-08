@@ -119,6 +119,7 @@ class Node(Config, ReprMixin):
     def display_nodes(cls, nodes):
         display_result(nodes, Node, title='Nodes')
 
+        six.print_()
         rows = []
         for node in nodes:
             node_column = chain([node.name], repeat(''))
@@ -274,7 +275,7 @@ class Cluster(Config, ReprMixin, BaseCluster):
     stack_id = Field(six.text_type, required=True)
     cbd_version = Field(int, required=True,
                         help='API version at which cluster was created')
-    links = ListField(Link, required=True)
+    links = ListField(Link)
 
 
 class ClusterDetail(Config, ReprMixin, BaseCluster):
@@ -339,7 +340,7 @@ class Flavor(Config, ReprMixin):
     disk = Field(int, required=True, help='Disk space in MB')
     vcpus = Field(int, required=True)
     ram = Field(int, required=True, help='Memory in MB')
-    links = ListField(Link, required=True)
+    links = ListField(Link)
 
 
 class ServiceComponent(Config, ReprMixin):
@@ -426,7 +427,7 @@ class Stack(Config, ReprMixin, BaseStack):
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
     description = Field(six.text_type)
-    links = ListField(Link, required=True)
+    links = ListField(Link)
     distro = Field(six.text_type, required=True, help='Distribution ID')
     services = ListField(StackService, required=True,
                          help='See: :class:`StackService`')
@@ -527,7 +528,7 @@ class Script(Config, ReprMixin):
     updated = Field(DateTime, required=True,
                     help=':py:class:`~datetime.datetime` corresponding to '
                          'date last updated')
-    links = ListField(Link, required=True)
+    links = ListField(Link)
 
     def update(self, **kwargs):
         """
@@ -599,7 +600,7 @@ class CredentialType(Config, ReprMixin):
 
     type = Field(six.text_type, required=True)
     schema = Field(dict, required=True)
-    links = ListField(Link, required=True)
+    links = ListField(Link)
 
 
 class SSHKey(Config, ReprMixin):
