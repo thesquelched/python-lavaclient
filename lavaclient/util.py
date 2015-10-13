@@ -248,7 +248,7 @@ def display_table(response_config, title=None):
             if hasattr(response_config, 'display'):
                 if isinstance(result, (list, tuple)):
                     for item in result:
-                        response_config.display(result)
+                        response_config.display(item)
                 else:
                     response_config.display(result)
 
