@@ -74,6 +74,40 @@ def test_api_resize(lavaclient, cluster_response):
                   'cluster_id', node_groups=[{'id': 'node_id'}])
 
 
+def test_api_update_credentials(lavaclient, cluster_response):
+    with patch.object(lavaclient, '_request') as request:
+
+        request.return_value = cluster_response
+        resp = lavaclient.clusters._update_credentials(
+            'cluster_id',
+            credentials=[{'s3': 's3_cred'}]
+        )
+
+        assert isinstance(resp, response.ClusterDetail)
+        request.assert_called_with('PUT', 'clusters/cluster_id',
+                                   json={'cluster':
+                                         {'credentials':
+                                          [{'name': u's3_cred',
+                                            'type': u's3'}]}})
+
+
+def test_api_delete_ssh_credentials(lavaclient, cluster_response):
+    with patch.object(lavaclient, '_request') as request:
+
+        request.return_value = cluster_response
+        resp = lavaclient.clusters.delete_ssh_credentials(
+            'cluster_id',
+            ['ssh_cred'],
+            False
+        )
+        assert isinstance(resp, response.ClusterDetail)
+        request.assert_called_with('PUT', 'clusters/cluster_id',
+                                   json={'cluster':
+                                         {'remove_credentials':
+                                          [{'type': u'ssh_keys',
+                                            'name': u'ssh_cred'}]}})
+
+
 def test_api_delete(lavaclient, cluster_response):
     with patch.object(lavaclient, '_request') as request:
         request.return_value = cluster_response
