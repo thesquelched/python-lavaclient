@@ -76,6 +76,12 @@ def create_client(args):
                                   os.environ.get('LAVA2_API_URL'),
                                   os.environ.get('LAVA_API_URL')),
             verify_ssl=args.verify_ssl,
+            timeout=first_exists(args.request_timeout,
+                                 os.environ.get('LAVA_TIMEOUT')),
+            max_retries=first_exists(args.retries,
+                                     os.environ.get('LAVA_RETRIES')),
+            retry_backoff=first_exists(args.retry_backoff,
+                                       os.environ.get('LAVA_RETRY_BACKOFF')),
             _cli_args=args)
     except LavaError as exc:
         six.print_('Error during authentication: {0}'.format(exc),
@@ -266,6 +272,16 @@ def parse_argv():
         general.add_argument('--insecure', '-k', action='store_false',
                              dest='verify_ssl',
                              help='Turn of SSL cert validation')
+        general.add_argument('--retries', type=int,
+                             help='Number of times to retry on connection '
+                                  'errors')
+        general.add_argument('--retry-backoff', type=float,
+                             help='Amount of time to increase the delay '
+                                  'between retry attempts, in fractional '
+                                  'seconds.')
+        general.add_argument('--request-timeout', type=int,
+                             help='Amount of time to wait for a response, '
+                                  'in seconds')
 
         fmt = prs.add_argument_group('Formatting Options')
         with_opposites(fmt, 'pretty_print', '--format', '-f',
