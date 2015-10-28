@@ -3,6 +3,7 @@
 * CLI
     * Add update_credentials and delete_ssh_credentials commands
     * Remove restrictions on credential names in type=name pairs
+* Add configurable request timeouts and retries on network errors and 503 responses
 
 0.2.7
 -----
