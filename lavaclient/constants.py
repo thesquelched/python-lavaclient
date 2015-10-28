@@ -14,6 +14,9 @@
 
 # Internals
 LOGGER_NAME = 'lavaclient'
+DEFAULT_TIMEOUT = 30
+DEFAULT_RETRIES = 3
+DEFAULT_RETRY_BACKOFF = 0.2
 
 
 # Authentication

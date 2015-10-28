@@ -49,6 +49,11 @@ class FailedError(LavaError):
     pass
 
 
+class ConnectionError(LavaError):
+    """The API could not be reached"""
+    pass
+
+
 class TimeoutError(LavaError):
     """The action timed out"""
     pass

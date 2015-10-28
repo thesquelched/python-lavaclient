@@ -19,6 +19,7 @@ import six
 import re
 import uuid
 import requests
+from requests.packages.urllib3.util import retry as requests_retry
 from threading import Lock
 
 from lavaclient._version import __version__
@@ -68,6 +69,9 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
                  tenant_id=None,
                  endpoint=None,
                  verify_ssl=None,
+                 timeout=None,
+                 max_retries=None,
+                 retry_backoff=None,
                  _cli_args=None):
         if not any((api_key, password, token)):
             raise error.InvalidError("One of api_key, token, or password is "
@@ -83,6 +87,7 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
         if auth_url is None:
             auth_url = constants.DEFAULT_AUTH_URL
 
+        self._request_timeout = timeout
         self._auth_url = auth_url
         self._region = region
         self._api_key = api_key
@@ -111,6 +116,8 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
             endpoint = self._get_endpoint(region, tenant_id)
 
         self._endpoint = self._validate_endpoint(endpoint, tenant_id)
+        self._session = self._make_session(max_retries, retry_backoff,
+                                           auth_url, self._endpoint)
 
         # Initialize API resources
         self.clusters = clusters.Resource(self, cli_args=_cli_args)
@@ -127,6 +134,33 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
         self._workloads = workloads.Resource(self, cli_args=_cli_args)
 
         self._auth_lock = Lock()
+
+    def _make_session(self, max_retries, retry_backoff, auth_url,
+                      endpoint):
+        """Create requests session that retries on connection failures"""
+        if max_retries is None:
+            max_retries = constants.DEFAULT_RETRIES
+
+        if retry_backoff is None:
+            retry_backoff = constants.DEFAULT_RETRY_BACKOFF
+
+        session = requests.Session()
+        # this makes it retry on timeouts, connection errors,
+        # and 503 Unavailable responses
+        adapter = requests.adapters.HTTPAdapter(
+            max_retries=requests_retry.Retry(
+                total=max(0, max_retries),
+                backoff_factor=max(0, retry_backoff),
+                status_forcelist=set([503]),
+                method_whitelist=set(),
+            )
+        )
+
+        # Retries for authentication and API requests
+        session.mount(auth_url, adapter)
+        session.mount(endpoint, adapter)
+
+        return session
 
     def _validate_endpoint(self, endpoint, tenant_id):
         """Validate that the endpoint ends with v2/<tenant_id>"""
@@ -316,10 +350,16 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
         headers.update(self._generate_headers())
         kwargs['headers'] = headers
 
+        if 'timeout' not in kwargs:
+            timeout = self._request_timeout
+            if timeout is None:
+                timeout = constants.DEFAULT_TIMEOUT
+            kwargs['timeout'] = timeout
+
         url = '{0}/{1}'.format(self.endpoint, path.lstrip('/'))
 
         try:
-            resp = requests.request(method, url, **kwargs)
+            resp = self._session.request(method, url, **kwargs)
             resp.raise_for_status()
         except requests.exceptions.HTTPError as exc:
             if exc.response.status_code != requests.codes.unauthorized:
@@ -341,6 +381,16 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
                 method.upper(), path.lstrip('/'))
             LOG.critical(msg, exc_info=exc)
             six.raise_from(error.AuthorizationError(msg), exc)
+        except requests.exceptions.ConnectionError as exc:
+            msg = ('{0} /{1}: Connection Error encountered during '
+                   'request').format(method.upper(), path.lstrip('/'))
+            LOG.warn(msg, exc_info=exc)
+            six.raise_from(error.ConnectionError(msg), exc)
+        except requests.exceptions.Timeout as exc:
+            msg = '{0} /{1}: Timeout encountered during request'.format(
+                method.upper(), path.lstrip('/'))
+            LOG.warn(msg, exc_info=exc)
+            six.raise_from(error.TimeoutError(msg), exc)
         except requests.exceptions.RequestException as exc:
             msg = '{0} /{1}: Error encountered during request'.format(
                 method.upper(), path.lstrip('/'))
