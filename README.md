@@ -18,16 +18,19 @@ For a list of commands
 $ lava --help
 
 usage: lava [-h] [--token TOKEN] [--api-key LAVA_API_KEY] [--region REGION]
-             [--tenant TENANT] [--version VERSION] [--debug]
-             [--endpoint ENDPOINT] [--auth-url AUTH_URL] [--headless]
-             [--user USER] [--password PASSWORD] [--insecure]
-             
-             {flavors,shell,limits,credentials,authenticate,scripts,clusters,nodes,stacks,distros}
-             ...
-             
+            [--tenant TENANT] [--version VERSION] [--debug]
+            [--endpoint ENDPOINT] [--auth-url AUTH_URL] [--headless]
+            [--user USER] [--password PASSWORD] [--insecure]
+            [--retries RETRIES] [--retry-backoff RETRY_BACKOFF]
+            [--request-timeout REQUEST_TIMEOUT] [--format] [--no-format]
+            [--header] [--no-header] [--delimiter DELIMITER]
+
+            {shell,authenticate,clusters,limits,flavors,stacks,distros,scripts,nodes,credentials}
+            ...
+
 optional arguments:
   -h, --help            show this help message and exit
-  
+
 General Options:
   --token TOKEN         Lava API authentication token
   --api-key LAVA_API_KEY
@@ -35,16 +38,32 @@ General Options:
   --region REGION       API region, e.g. DFW
   --tenant TENANT       Tenant ID
   --version VERSION     Print client version
-  --debug, -d           Print debugging information
+  --debug, -d           Print debugging information; use multiple times for
+                        more verbose logging
   --endpoint ENDPOINT   API endpoint URL
   --auth-url AUTH_URL   Keystone endpoint URL
   --headless            Do not request user input
   --user USER           Keystone auth username
   --password PASSWORD   Keystone auth password
   --insecure, -k        Turn of SSL cert validation
-  
+  --retries RETRIES     Number of times to retry on connection errors
+  --retry-backoff RETRY_BACKOFF
+                        Amount of time to increase the delay between retry
+                        attempts, in fractional seconds.
+  --request-timeout REQUEST_TIMEOUT
+                        Amount of time to wait for a response, in seconds
+
+Formatting Options:
+  --format, -f          Show a formatted table in the output
+  --no-format, -F       Opposite of --format, -f
+  --header              When outputting an unformatted table, print the header
+                        to stdout instead of stderr
+  --no-header           Opposite of --header
+  --delimiter DELIMITER, -l DELIMITER
+                        Column delimiter to use when formatting is disabled
+
 Commands:
-  {flavors,shell,limits,credentials,authenticate,scripts,clusters,nodes,stacks,distros}
+  {shell,authenticate,clusters,limits,flavors,stacks,distros,scripts,nodes,credentials}
 ```
 
 For a list of subcommands for each command
@@ -57,12 +76,17 @@ Here's an example of a cluster command with no arguments
 $ lava clusters
 
 usage: lava clusters [-h] [--token TOKEN] [--api-key LAVA_API_KEY]
-                      [--region REGION] [--tenant TENANT] [--version VERSION]
-                      [--debug] [--endpoint ENDPOINT] [--auth-url AUTH_URL]
-                      [--headless] [--user USER] [--password PASSWORD]
-                      [--insecure]
-                      {get,create,list,ssh_proxy,ssh,nodes,wait,resize,delete}
-                      ...
+                     [--region REGION] [--tenant TENANT] [--version VERSION]
+                     [--debug] [--endpoint ENDPOINT] [--auth-url AUTH_URL]
+                     [--headless] [--user USER] [--password PASSWORD]
+                     [--insecure] [--retries RETRIES]
+                     [--retry-backoff RETRY_BACKOFF]
+                     [--request-timeout REQUEST_TIMEOUT] [--format]
+                     [--no-format] [--header] [--no-header]
+                     [--delimiter DELIMITER]
+
+                     {create,delete_ssh_credentials,ssh,ssh_tunnel,get,update_credentials,ssh_proxy,delete,list,nodes,resize,wait}
+                     ...
 lava clusters: error: too few arguments
 ```
 
@@ -83,6 +107,30 @@ Alternatively, these values can be saved in a config file and passed in using [s
 ```console
 $ supernova -x lava dfw clusters list
 ```
+
+### Timeouts and Retries
+
+You can configure `lavaclient` to automatically retry on network errors and 503 Service Unavailable
+responses.  By default, it will retry 3 times with a delay in factors of 200ms (i.e. 200ms for 
+the first retry, then 400ms, then 800ms).  
+
+```console
+$ lava --retries 10 --retry-backoff 0.05
+```
+
+That would retry up to 10 times, starting with a 5ms delay and increasing that delay to 10ms, 
+20ms, 40ms, etc until it gives up after 10 retry attempts.
+
+You can also configure the request timeout.  The default timeout is 30s, but you can change that 
+to whatever you like.
+
+```console
+$ lava --request-timeout 120
+```
+
+It should be noted that the retry options also affect timeouts, so if you have a large number of 
+retries and a long timeout, it could take quite a while before it finally gives up.  The default 
+values should suit most general use-cases.
 
 ### Clusters
 
