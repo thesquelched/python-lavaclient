@@ -1,5 +1,10 @@
+0.2.9
+-----
+* CLI
+    * Fixed --version flag
+
 0.2.8
-----
+-----
 * CLI
     * Add update_credentials and delete_ssh_credentials commands
     * Remove restrictions on credential names in type=name pairs

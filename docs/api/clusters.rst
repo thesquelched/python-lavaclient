@@ -77,6 +77,16 @@ On the command line, you have a few additional useful commands available::
     Use Ctrl-C to stop proxy
     ^CSOCKS proxy closed
 
+.. note::
+
+    The `ssh_proxy` command will allow you to access web interfaces for the
+    various services installed on your cluster, e.g. the YARN Web UI (you can
+    find the URL's for the services installed on your cluster using the
+    :meth:`~lavaclient.api.clusters.Resource.nodes` method or CLI command).
+    However, you will have to set up your browser to access the SOCKS proxy
+    using the information provided.  Note that this is a SOCKS 5 proxy, not
+    SOCKS 4.
+
 
 API Reference
 -------------

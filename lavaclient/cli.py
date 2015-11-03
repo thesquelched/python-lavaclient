@@ -255,6 +255,8 @@ def parse_argv():
         general.add_argument('--tenant',
                              help='Tenant ID')
         general.add_argument('--version',
+                             action='version',
+                             version=__version__,
                              help='Print client version')
         general.add_argument('--debug', '-d', action='count',
                              help='Print debugging information; use multiple '
@@ -326,10 +328,6 @@ def parse_argv():
 
 def main():
     args = parse_argv()
-    if args.version:
-        six.print_('lavaclient version ' + __version__)
-        sys.exit(0)
-
     initialize_logging(args)
 
     try:
