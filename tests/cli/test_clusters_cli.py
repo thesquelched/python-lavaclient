@@ -297,9 +297,13 @@ def test_nodes(resp_print_table, print_table, mock_client, nodes_response):
     assert kwargs['title'] == 'Components'
 
 
+@pytest.mark.parametrize('status', ['ACTIVE', 'IMPAIRED'])
 @patch('subprocess.Popen')
-def test_ssh_proxy(popen, mock_client, cluster_response, nodes_response):
+def test_ssh_proxy(popen, status, mock_client, cluster_response,
+                   nodes_response):
     del nodes_response['nodes'][0]['components'][0]['uri']
+
+    cluster_response['cluster']['status'] = status
 
     popen.return_value = MagicMock(
         poll=MagicMock(return_value=None),
@@ -316,6 +320,25 @@ def test_ssh_proxy(popen, mock_client, cluster_response, nodes_response):
          '-N', '-D', '54321', 'username@1.2.3.4'],
         stderr=subprocess.STDOUT,
         stdout=subprocess.PIPE)
+
+
+@pytest.mark.parametrize('status', ['ERROR', 'PENDING'])
+@patch('subprocess.Popen')
+def test_ssh_proxy_nonterminal(popen, status, mock_client, cluster_response,
+                               nodes_response):
+    del nodes_response['nodes'][0]['components'][0]['uri']
+
+    cluster_response['cluster']['status'] = status
+
+    popen.return_value = MagicMock(
+        poll=MagicMock(return_value=None),
+        communicate=MagicMock(return_value=('stdout', 'stderr'))
+    )
+    mock_client._request.side_effect = [cluster_response, nodes_response]
+
+    with patch('sys.argv', ['lava', 'clusters', 'ssh_proxy', 'cluster_id',
+                            '--node-name', 'NODENAME', '--port', '54321']):
+        pytest.raises(Exception, main)
 
 
 @pytest.mark.parametrize('failure', [None,

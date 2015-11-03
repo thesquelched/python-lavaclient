@@ -49,7 +49,7 @@ MIN_INTERVAL = 10
 IN_PROGRESS_STATES = frozenset([
     'BUILDING', 'BUILD', 'CONFIGURING', 'CONFIGURED', 'UPDATING', 'REBOOTING',
     'RESIZING', 'WAITING'])
-FINAL_STATES = frozenset(['ACTIVE', 'ERROR'])
+FINAL_STATES = frozenset(['ACTIVE', 'ERROR', 'IMPAIRED'])
 INVALID_USERNAMES = frozenset(['root'])
 
 DEFAULT_SSH_KEY = '{0}@{1}'.format(getuser(), socket.gethostname())
@@ -762,12 +762,12 @@ class Resource(resource.Resource):
             raise error.InvalidError(
                 'Component {0} not found in cluster'.format(component))
 
-    def _cluster_nodes(self, cluster_id, wait=False):
+    def _ssh_cluster_nodes(self, cluster_id, wait=False):
         """
         Return `(cluster, nodes)`, where `nodes` is a list of all non-Ambari
-        nodes in the cluster. If the cluster is not ACTIVE/ERROR and wait is
-        `True`, the function will block until it becomes active; otherwise, an
-        exception is thrown.
+        nodes in the cluster. If the cluster is not ACTIVE/ERROR/IMPAIRED and
+        wait is `True`, the function will block until it becomes active;
+        otherwise, an exception is thrown.
         """
         cluster = self.get(cluster_id)
         status = cluster.status.upper()
@@ -781,6 +781,9 @@ class Resource(resource.Resource):
                 raise error.InvalidError('Cluster is not yet active')
 
             self.wait(cluster_id)
+
+        if cluster.status.upper() == 'ERROR':
+            raise error.InvalidError('Cluster is in state ERROR')
 
         nodes = [node for node in self.nodes(cluster_id)
                  if node.name.lower() != 'ambari']
@@ -820,7 +823,7 @@ class Resource(resource.Resource):
         if port is None:
             port = 12345
 
-        cluster, nodes = self._cluster_nodes(cluster_id, wait=wait)
+        cluster, nodes = self._ssh_cluster_nodes(cluster_id, wait=wait)
         ssh_node = self._get_named_node(nodes, node_name=node_name)
 
         # Get a URL to test the proxy against
@@ -877,7 +880,7 @@ class Resource(resource.Resource):
 
     def _execute_ssh(self, cluster_id, node_name=None, ssh_command=None,
                      wait=False, command=None):
-        cluster, nodes = self._cluster_nodes(cluster_id, wait=wait)
+        cluster, nodes = self._ssh_cluster_nodes(cluster_id, wait=wait)
         node = self._get_named_node(nodes, node_name=node_name)
 
         return node._ssh(cluster.username, command=command,
@@ -948,7 +951,7 @@ class Resource(resource.Resource):
             raise error.InvalidError(
                 'One of node_name or component is required')
 
-        cluster, nodes = self._cluster_nodes(cluster_id, wait=wait)
+        cluster, nodes = self._ssh_cluster_nodes(cluster_id, wait=wait)
 
         if component:
             ssh_node = self._get_component_node(nodes, component)

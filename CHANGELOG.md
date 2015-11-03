@@ -2,6 +2,8 @@
 -----
 * CLI
     * Fixed --version flag
+* You may now SSH to any cluster not in ERROR status, including IMPAIRED
+  clusters
 
 0.2.8
 -----
