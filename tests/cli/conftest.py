@@ -42,9 +42,16 @@ def mock_client(request):
 
 @pytest.fixture
 def print_table(request):
-    patcher = patch('lavaclient.util.print_table')
-    request.addfinalizer(patcher.stop)
-    return patcher.start()
+    func = MagicMock()
+    for path in ('lavaclient.api.response',
+                 'lavaclient.api.stacks',
+                 'lavaclient.api.workloads',
+                 'lavaclient.util'):
+        patcher = patch(path + '.print_table', func)
+        request.addfinalizer(patcher.stop)
+        patcher.start()
+
+    return func
 
 
 @pytest.fixture

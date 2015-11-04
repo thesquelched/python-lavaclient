@@ -40,7 +40,7 @@ def test_get(print_table, print_single_table, mock_client, cluster_response):
     assert print_table.call_count == 2
 
     (data, header), kwargs = print_table.call_args_list[0]
-    assert list(data) == [['id', 'hadoop1-60', 1, '[{name=component}]']]
+    assert list(data) == [('id', 'hadoop1-60', 1, 'component')]
     assert header == NodeGroup.table_header
     assert kwargs['title'] == 'Node Groups'
 
@@ -266,7 +266,7 @@ def test_wait(stdout, print_table, print_single_table, mock_client,
     assert print_table.call_count == 2
 
     (data, header), kwargs = print_table.call_args_list[0]
-    assert list(data) == [['id', 'hadoop1-60', 1, '[{name=component}]']]
+    assert list(data) == [('id', 'hadoop1-60', 1, 'component')]
     assert header == NodeGroup.table_header
     assert kwargs['title'] == 'Node Groups'
 
@@ -277,19 +277,19 @@ def test_wait(stdout, print_table, print_single_table, mock_client,
 
 
 @patch('sys.argv', ['lava', 'clusters', 'nodes', 'cluster_id'])
-@patch('lavaclient.api.response.print_table')
-def test_nodes(resp_print_table, print_table, mock_client, nodes_response):
+def test_nodes(print_table, mock_client, nodes_response):
     mock_client._request.return_value = nodes_response
     main()
 
-    (data, header), kwargs = print_table.call_args
+    assert print_table.call_count == 2
+    (data, header), kwargs = print_table.call_args_list[0]
     alldata = [entry for entry in list(data)[0]]
     assert alldata[:6] == ['node_id', 'NODENAME', 'node_group', 'ACTIVE',
                            '1.2.3.4', '5.6.7.8']
     assert header == Node.table_header
     assert kwargs['title'] == 'Nodes'
 
-    (data, header), kwargs = resp_print_table.call_args
+    (data, header), kwargs = print_table.call_args_list[1]
     alldata = [entry for entry in list(data)[0]]
     assert alldata[:6] == ['NODENAME', 'component_name', 'Component name',
                            'http://host']
