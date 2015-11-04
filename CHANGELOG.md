@@ -1,5 +1,12 @@
+0.2.9
+-----
+* CLI
+    * Fixed --version flag
+* You may now SSH to any cluster not in ERROR status, including IMPAIRED
+  clusters
+
 0.2.8
-----
+-----
 * CLI
     * Add update_credentials and delete_ssh_credentials commands
     * Remove restrictions on credential names in type=name pairs
