@@ -7,20 +7,13 @@ from lavaclient.cli import main
 from lavaclient.api.response import StackDetail, StackNodeGroup
 
 
-@pytest.fixture
-def print_table_(request):
-    patcher = patch('lavaclient.api.stacks.print_table')
-    request.addfinalizer(patcher.stop)
-    return patcher.start()
-
-
 @patch('sys.argv', ['lava', 'stacks', 'list'])
-def test_list(print_table_, mock_client, stacks_response):
+def test_list(print_table, mock_client, stacks_response):
     mock_client._request.return_value = stacks_response
     main()
 
-    assert print_table_.call_count == 2
-    (data, header), kwargs = print_table_.call_args_list[0]
+    assert print_table.call_count == 2
+    (data, header), kwargs = print_table.call_args_list[0]
     alldata = list(data)
     assert len(alldata) == 1
     assert list(item[:5] for item in alldata) == [[1,
@@ -51,9 +44,9 @@ def test_get(print_table, print_single_table, mock_client, stack_response):
     assert header == StackDetail.table_header
     assert kwargs['title'] == 'Stack'
 
-    assert print_table.call_count == 1
+    assert print_table.call_count == 2
 
-    (data, header), kwargs = print_table.call_args
+    (data, header), kwargs = print_table.call_args_list[0]
     assert list(data) == [['id', 'hadoop1-7', 10, 1024, 1, 10]]
     assert header == StackNodeGroup.table_header
     assert kwargs['title'] == 'Node Groups'
@@ -102,9 +95,9 @@ def test_create(services, node_groups, print_table, print_single_table,
     assert header == StackDetail.table_header
     assert kwargs['title'] == 'Stack'
 
-    assert print_table.call_count == 1
+    assert print_table.call_count == 2
 
-    (data, header), kwargs = print_table.call_args
+    (data, header), kwargs = print_table.call_args_list[0]
     assert list(data) == [['id', 'hadoop1-7', 10, 1024, 1, 10]]
     assert header == StackNodeGroup.table_header
     assert kwargs['title'] == 'Node Groups'

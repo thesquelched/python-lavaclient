@@ -4,7 +4,6 @@ from lavaclient.cli import main
 
 
 @patch('sys.argv', ['lava', 'limits', 'get'])
-@patch('lavaclient.api.response.print_table')
 def test_get(print_table, mock_client, limits_response):
     mock_client._request.return_value = limits_response
     main()

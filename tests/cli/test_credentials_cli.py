@@ -4,13 +4,12 @@ from lavaclient.cli import main
 
 
 @patch('sys.argv', ['lava', 'credentials', 'list'])
-@patch('lavaclient.api.response.print_table')
-def test_list(print_table_, mock_client, credentials_response):
+def test_list(print_table, mock_client, credentials_response):
     mock_client._request.return_value = credentials_response
     main()
 
-    assert print_table_.call_count == 1
-    (data, header), kwargs = print_table_.call_args
+    assert print_table.call_count == 1
+    (data, header), kwargs = print_table.call_args
     assert list(data) == [('SSH Key', 'mykey'),
                           ('Cloud Files', 'username'),
                           ('Amazon S3', 'access_key_id'),

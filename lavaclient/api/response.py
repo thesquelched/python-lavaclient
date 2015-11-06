@@ -180,7 +180,6 @@ class Node(Config, ReprMixin):
         return self._ssh(username, command=command, ssh_command=ssh_command)
 
 
-@prettify('components')
 class NodeGroup(Config, ReprMixin):
     """Group of nodes that share the same flavor and installed services"""
 
@@ -318,12 +317,25 @@ class ClusterDetail(Config, ReprMixin, BaseCluster):
     progress = Field(float, required=True)
     credentials = Field(parse_cluster_credentials, required=True)
 
+    def display_node_groups(self):
+        data = []
+        for group in self.node_groups:
+            data.extend(zip(
+                chain([group.id], repeat('')),
+                chain([group.flavor_id], repeat('')),
+                chain([group.count], repeat('')),
+                sorted(component['name'] for component in group.components)
+            ))
+
+        print_table(data, ('ID', 'Flavor', 'Count', 'Components'),
+                    title='Node Groups')
+
     def display(self):
         display_result(self, ClusterDetail, title='Cluster')
 
         if self.node_groups:
             six.print_()
-            display_result(self.node_groups, NodeGroup, title='Node Groups')
+            self.display_node_groups()
 
         if self.scripts:
             six.print_()
