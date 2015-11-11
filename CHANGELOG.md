@@ -4,6 +4,7 @@
     * Fixed --version flag
     * Updated cluster node groups format to show component names instead of
       raw JSON
+    * Sort cluster nodes by name
 * You may now SSH to any cluster not in ERROR status, including IMPAIRED
   clusters
 
