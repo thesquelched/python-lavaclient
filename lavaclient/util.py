@@ -172,6 +172,16 @@ def print_single_table(data, header, title=None):
     print_titled(create_single_table(data, header), title)
 
 
+def print_dict_table(data, **kwargs):
+    """Print out arbitrary dictionaries in a table structure"""
+    headers, values = [], []
+    for header in sorted(six.iterkeys(data)):
+        headers.append(header)
+        values.append(data[header])
+
+    print_single_table(values, headers, **kwargs)
+
+
 def no_nulls(data):
     return ['' if item is None else item for item in data]
 

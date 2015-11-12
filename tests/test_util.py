@@ -120,6 +120,38 @@ def test_print_single_table(data, header, title, output):
     assert strio.getvalue() == output
 
 
+@pytest.mark.parametrize('data,title,output', [
+    ({'foo': 1, 'bar': 2}, None, """\
++-----+---+
+| bar | 2 |
+| foo | 1 |
++-----+---+
+"""),
+    ({'foo': 1, 'bar': 2}, 'short', """\
++---------+
+|  short  |
++-----+---+
+| bar | 2 |
+| foo | 1 |
++-----+---+
+"""),
+    ({'foo': 1, 'bar': 2}, 'waytoofreakinglong', """\
++---------------------+
+|  waytoofreakinglong |
++-----------+---------+
+|    bar    |    2    |
+|    foo    |    1    |
++-----------+---------+
+"""),
+])
+def test_print_dict_table(data, title, output):
+    strio = six.StringIO()
+    with patch('sys.stdout', strio):
+        util.print_dict_table(data, title=title)
+
+    assert strio.getvalue() == output
+
+
 def test_inject_client():
     class SubSubConf(Config):
         field = Field(int)
