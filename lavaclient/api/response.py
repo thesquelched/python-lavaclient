@@ -117,11 +117,12 @@ class Node(Config, ReprMixin):
 
     @classmethod
     def display_nodes(cls, nodes):
-        display_result(nodes, Node, title='Nodes')
+        sorted_nodes = sorted(nodes, key=lambda node: node.name)
+        display_result(sorted_nodes, Node, title='Nodes')
 
         six.print_()
         rows = []
-        for node in nodes:
+        for node in sorted_nodes:
             node_column = chain([node.name], repeat(''))
 
             rows.extend(
