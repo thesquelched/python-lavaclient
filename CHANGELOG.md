@@ -1,3 +1,8 @@
+0.2.10
+------
+* CLI
+    * Fix unformatted output for single-item requests, e.g. `clusters get`
+
 0.2.9
 -----
 * CLI

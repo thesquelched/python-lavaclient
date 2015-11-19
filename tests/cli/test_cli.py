@@ -1,8 +1,10 @@
 import pytest
 import shlex
-from mock import patch
+import sys
+from mock import patch, Mock, call
+from figgis import Config, Field
 
-from lavaclient.cli import parse_argv
+from lavaclient.cli import parse_argv, print_unformatted_table
 
 
 @patch('sys.argv', ['lava', 'authenticate', '--token', 'mytoken'])
@@ -25,3 +27,22 @@ def test_argparse_order(pre_args, post_args, key, value):
         args = parse_argv()
 
     assert getattr(args, key) == value
+
+
+@patch('six.print_')
+def test_print_unformatted(sixprint):
+    class Conf(Config):
+        table_columns = ('field1', 'field2')
+
+        field1 = Field()
+        field2 = Field()
+
+    data = Conf(field1=1, field2=2)
+
+    fake_args = Mock(delimiter=',', show_header=False)
+    print_unformatted_table(fake_args, data)
+
+    sixprint.assert_has_calls([
+        call('field1,field2', file=sys.stderr),
+        call('1,2'),
+    ])

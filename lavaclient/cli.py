@@ -109,7 +109,7 @@ def print_unformatted_table(args, result):
     result_list = [result] if isinstance(result, figgis.Config) else result
     response_class = result_list[0].__class__
 
-    data, long_header = table_data(result, response_class)
+    data, long_header = table_data(result_list, response_class)
     header = [item.replace(' ', '_').lower() for item in long_header]
 
     delim = six.text_type(args.delimiter)
