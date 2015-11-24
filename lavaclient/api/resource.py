@@ -49,7 +49,7 @@ class Resource(object):
     def __init__(self, client, cli_args=None):
         self._client = client
         self._args = cli_args
-        self._command_line = cli_args is not None
+        self._command_line = cli_args.enable_cli if cli_args else False
 
     def _parse_response(self, data, response_class, wrapper=None):
         """

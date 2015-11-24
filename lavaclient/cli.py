@@ -35,6 +35,10 @@ def create_client(args):
     """
     Create instance of Lava from CLI args
     """
+    resource = args.resource
+    if resource == 'shell':
+        args.enable_cli = False
+
     apikey = first_exists(args.lava_api_key,
                           os.environ.get('LAVA_API_KEY'),
                           os.environ.get('OS_API_KEY'))
@@ -164,9 +168,6 @@ def execute_command(client, args):
     Execute lava command
     """
     resource = args.resource
-    if resource == 'shell':
-        args.enable_cli = False
-
     if resource in COMMAND_DISPATCH:
         COMMAND_DISPATCH[resource](client, args)
         sys.exit(0)
