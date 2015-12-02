@@ -2,6 +2,7 @@
 ------
 * CLI
     * Fix unformatted output for single-item requests, e.g. `clusters get`
+    * Shell command no longer displays command-line specific output
 
 0.2.9
 -----

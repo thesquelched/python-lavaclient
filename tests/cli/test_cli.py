@@ -1,10 +1,26 @@
 import pytest
 import shlex
 import sys
-from mock import patch, Mock, call
+from mock import patch, Mock, call, MagicMock
 from figgis import Config, Field
 
-from lavaclient.cli import parse_argv, print_unformatted_table
+from lavaclient.cli import parse_argv, print_unformatted_table, create_client
+
+
+@pytest.fixture
+def mock_ipython(request):
+    ipython = MagicMock()
+    fake_modules = {
+        'IPython': ipython,
+        'IPython.terminal': ipython.terminal,
+        'IPython.terminal.embed': ipython.terminal.embed,
+    }
+
+    patcher = patch.dict('sys.modules', fake_modules)
+    request.addfinalizer(patcher.stop)
+
+    patcher.start()
+    return ipython
 
 
 @patch('sys.argv', ['lava', 'authenticate', '--token', 'mytoken'])
@@ -46,3 +62,15 @@ def test_print_unformatted(sixprint):
         call('field1,field2', file=sys.stderr),
         call('1,2'),
     ])
+
+
+@patch('sys.argv', ['lava', 'shell'])
+def test_shell(mock_ipython):
+    mock_ipython.terminal.embed.InteractiveShellEmbed.assert_called()
+
+
+def test_create_client_shell(mock_ipython):
+    args = MagicMock(resource='shell', retries=None, retry_backoff=None)
+    client = create_client(args)
+
+    assert not client.clusters._command_line
