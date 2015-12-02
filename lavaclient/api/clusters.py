@@ -977,3 +977,47 @@ class Resource(resource.Resource):
             process.communicate()
         except KeyboardInterrupt:
             printer('SSH tunnel closed')
+
+    def services(self, action, cluster_id, service_names):
+        data = {
+            'cluster': {
+                'control_services': {
+                    'action': action,
+                    'services': [{'name': name} for name in service_names],
+                }
+            }
+        }
+        return self._parse_response(
+            self._client._put('clusters/{0}'.format(cluster_id), json=data),
+            ClusterResponse,
+            wrapper='cluster')
+
+    @command(
+        parser_options=dict(
+            description='Start/stop/restart services on a cluster'
+        ),
+        action=argument(choices=['start', 'stop', 'restart']),
+        service_names=argument(metavar='<service>', nargs='*',
+                               help='Cluster service name, e.g. HDFS'),
+        force=argument(action='store_true',
+                       help="Don't display confirmation dialog"),
+    )
+    @display_table(ClusterDetail)
+    def _services(self, action, cluster_id, service_names, force=False):
+        if not force:
+            if service_names:
+                services_str = 'service{0} {1}'.format(
+                    's' if len(service_names) > 1 else '',
+                    ', '.join(service_names))
+            else:
+                services_str = 'all services'
+
+            dialog = '{0} {1} on cluster {2}?'.format(
+                action.capitalize(),
+                services_str,
+                cluster_id)
+
+            if not confirm(dialog):
+                return
+
+        return self.services(action, cluster_id, service_names)

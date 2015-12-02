@@ -1,8 +1,9 @@
-0.2.10
-------
+0.3.0
+-----
 * CLI
     * Fix unformatted output for single-item requests, e.g. `clusters get`
     * Shell command no longer displays command-line specific output
+* Add ability to control (i.e. start, stop, or restart) services on a cluster
 
 0.2.9
 -----
