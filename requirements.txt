@@ -3,5 +3,6 @@ oslo.i18n>=1.7.0
 requests>=2.5.1
 six>=1.9.0
 python-dateutil>=2.4.2
-figgis>=1.6.1
+figgis>=1.6.2
 PySocks>=1.5.4
+importlib>=1.0.3; python_version < '3.1'
