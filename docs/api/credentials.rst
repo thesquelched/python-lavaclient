@@ -24,6 +24,15 @@ manually::
     ...     ssh_keys=[ssh_key.id],
     ...     node_groups={'slave': {'count': 3, 'flavor_id': 'hadoop1-7'}})
 
+.. warning::
+
+    Some credentials, such as Ambari read-only users, can not be added to
+    existing clusters via the API, and therefore must be specified at cluster
+    creation time.  However, some credentials may be updated on existing
+    clusters; for example, while you can't create a new Ambari user on an
+    existing cluster, changing an existing user's password will be reflected
+    on all clusters that include that user.
+
 Similarly, you can add credentials to access other services from your clusters,
 e.g. `Cloud Files <http://www.rackspace.com/cloud/files>`_, which you can
 enable using the `credentials` argument when creating a cluster::

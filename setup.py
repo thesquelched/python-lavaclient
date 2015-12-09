@@ -32,6 +32,8 @@ INSTALL_REQUIRES = [
 
 if sys.version_info < (3, 1):
     INSTALL_REQUIRES.append('importlib>=1.0.3')
+if sys.version_info < (2, 7):
+    INSTALL_REQUIRES.append('oslo.config<3.1.0')
 
 
 def read_version():
