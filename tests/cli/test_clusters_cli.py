@@ -13,6 +13,35 @@ from lavaclient.api.clusters import DEFAULT_SSH_KEY
 from lavaclient.error import RequestError
 
 
+def check_cluster_detail(print_single_table, print_table):
+    assert print_single_table.call_count == 1
+    (data, header), kwargs = print_single_table.call_args
+    assert data == ['cluster_id', 'cluster_name', 'ACTIVE', 'stack_id',
+                    datetime(2014, 1, 1), 1, 'username', 1.0]
+    assert header == ClusterDetail.table_header
+    assert kwargs['title'] == 'Cluster'
+
+    assert print_table.call_count == 3
+
+    (data, header), kwargs = print_table.call_args_list[0]
+    assert list(data) == [('SSH Key', 'mykey'),
+                          ('Cloud Files', 'username'),
+                          ('Amazon S3', 'accesskey'),
+                          ('Ambari', 'username')]
+    assert header == ('Type', 'Name')
+    assert kwargs['title'] == 'Credentials'
+
+    (data, header), kwargs = print_table.call_args_list[1]
+    assert list(data) == [('id', 'hadoop1-60', 1, 'component')]
+    assert header == NodeGroup.table_header
+    assert kwargs['title'] == 'Node Groups'
+
+    (data, header), kwargs = print_table.call_args_list[2]
+    assert list(data) == [['script_id', 'name', 'status']]
+    assert header == ['ID', 'Name', 'Status']
+    assert kwargs['title'] == 'Scripts'
+
+
 @patch('sys.argv', ['lava', 'clusters', 'list'])
 def test_list(print_table, mock_client, clusters_response):
     mock_client._request.return_value = clusters_response
@@ -30,24 +59,7 @@ def test_get(print_table, print_single_table, mock_client, cluster_response):
     mock_client._request.return_value = cluster_response
     main()
 
-    assert print_single_table.call_count == 1
-    (data, header), kwargs = print_single_table.call_args
-    assert data == ['cluster_id', 'cluster_name', 'ACTIVE', 'stack_id',
-                    datetime(2014, 1, 1), 1, 'username', 1.0]
-    assert header == ClusterDetail.table_header
-    assert kwargs['title'] == 'Cluster'
-
-    assert print_table.call_count == 2
-
-    (data, header), kwargs = print_table.call_args_list[0]
-    assert list(data) == [('id', 'hadoop1-60', 1, 'component')]
-    assert header == NodeGroup.table_header
-    assert kwargs['title'] == 'Node Groups'
-
-    (data, header), kwargs = print_table.call_args_list[1]
-    assert list(data) == [['script_id', 'name', 'status']]
-    assert header == ['ID', 'Name', 'Status']
-    assert kwargs['title'] == 'Scripts'
+    check_cluster_detail(print_single_table, print_table)
 
 
 @pytest.mark.parametrize('args,node_groups', [
@@ -68,8 +80,10 @@ def test_create_node_groups(args, node_groups, print_table,
     with patch('sys.argv', base_args + args):
         main()
 
-        kwargs = mock_client._request.call_args[1]
-        assert kwargs['json']['cluster'].get('node_groups') == node_groups
+    kwargs = mock_client._request.call_args[1]
+    assert kwargs['json']['cluster'].get('node_groups') == node_groups
+
+    check_cluster_detail(print_single_table, print_table)
 
 
 @pytest.mark.parametrize('args,keys', [
@@ -256,24 +270,7 @@ def test_wait(stdout, print_table, print_single_table, mock_client,
                 '\b' * 47)),
         ])
 
-    assert print_single_table.call_count == 1
-    (data, header), kwargs = print_single_table.call_args
-    assert data == ['cluster_id', 'cluster_name', 'ACTIVE', 'stack_id',
-                    datetime(2014, 1, 1), 1, 'username', 1.0]
-    assert header == ClusterDetail.table_header
-    assert kwargs['title'] == 'Cluster'
-
-    assert print_table.call_count == 2
-
-    (data, header), kwargs = print_table.call_args_list[0]
-    assert list(data) == [('id', 'hadoop1-60', 1, 'component')]
-    assert header == NodeGroup.table_header
-    assert kwargs['title'] == 'Node Groups'
-
-    (data, header), kwargs = print_table.call_args_list[1]
-    assert list(data) == [['script_id', 'name', 'status']]
-    assert header == ['ID', 'Name', 'Status']
-    assert kwargs['title'] == 'Scripts'
+    check_cluster_detail(print_single_table, print_table)
 
 
 @patch('sys.argv', ['lava', 'clusters', 'nodes', 'cluster_id'])
@@ -499,21 +496,4 @@ def test_services(confirm, force, action, services, mock_client,
         }
     )
 
-    assert print_single_table.call_count == 1
-    (data, header), kwargs = print_single_table.call_args
-    assert data == ['cluster_id', 'cluster_name', 'ACTIVE', 'stack_id',
-                    datetime(2014, 1, 1), 1, 'username', 1.0]
-    assert header == ClusterDetail.table_header
-    assert kwargs['title'] == 'Cluster'
-
-    assert print_table.call_count == 2
-
-    (data, header), kwargs = print_table.call_args_list[0]
-    assert list(data) == [('id', 'hadoop1-60', 1, 'component')]
-    assert header == NodeGroup.table_header
-    assert kwargs['title'] == 'Node Groups'
-
-    (data, header), kwargs = print_table.call_args_list[1]
-    assert list(data) == [['script_id', 'name', 'status']]
-    assert header == ['ID', 'Name', 'Status']
-    assert kwargs['title'] == 'Scripts'
+    check_cluster_detail(print_single_table, print_table)

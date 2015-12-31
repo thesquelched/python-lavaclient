@@ -333,6 +333,8 @@ class ClusterDetail(Config, ReprMixin, BaseCluster):
 
     def display(self):
         display_result(self, ClusterDetail, title='Cluster')
+        six.print_()
+        self.credentials.display()
 
         if self.node_groups:
             six.print_()
@@ -701,7 +703,7 @@ class Credentials(Config, ReprMixin):
             [('Amazon S3', cred.access_key_id) for cred in self.s3],
             [('Ambari', cred.username) for cred in self.ambari]
         )
-        print_table(data, ('Type', 'Name'))
+        print_table(data, ('Type', 'Name'), title='Credentials')
 
 
 class AbsoluteLimit(Config, ReprMixin):

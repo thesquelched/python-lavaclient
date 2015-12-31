@@ -1,3 +1,8 @@
+0.3.1
+-----
+* CLI
+    * Display cluster credentials in all calls that show cluster details
+
 0.3.0
 -----
 * CLI
