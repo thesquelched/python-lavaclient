@@ -15,7 +15,7 @@ def test_list(print_table, mock_client, credentials_response):
                           ('Amazon S3', 'access_key_id'),
                           ('Ambari', 'username')]
     assert header == ('Type', 'Name')
-    assert 'title' not in kwargs
+    assert kwargs['title'] == 'Credentials'
 
 
 @patch('sys.argv', ['lava', 'credentials', 'list_ssh_keys'])
