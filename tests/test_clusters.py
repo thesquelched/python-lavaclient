@@ -46,6 +46,14 @@ def test_api_create(lavaclient, cluster_response):
             }])
         assert isinstance(resp, response.ClusterDetail)
 
+    with patch.object(lavaclient, '_request') as request:
+        request.return_value = cluster_response
+        resp = lavaclient.clusters.create(
+            'cluster_name', 'stack_id',
+            region='region'
+        )
+        assert isinstance(resp, response.ClusterDetail)
+
     pytest.raises(error.InvalidError, lavaclient.clusters.create, 'x' * 256,
                   'stack_id')
     pytest.raises(error.InvalidError, lavaclient.clusters.create, 'name',

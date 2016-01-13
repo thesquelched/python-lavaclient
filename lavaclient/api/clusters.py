@@ -144,6 +144,7 @@ class ClusterCreateRequest(Config):
     scripts = ListField(ClusterCreateScript)
     connectors = ListField(ClusterCreateCredential)
     credentials = ListField(ClusterCreateCredential)
+    region = Field(six.text_type, required=False)
 
 
 class ClusterResizeRequest(Config):
@@ -277,7 +278,7 @@ class Resource(resource.Resource):
 
     def create(self, name, stack_id, username=None, ssh_keys=None,
                user_scripts=None, node_groups=None, connectors=None,
-               wait=False, credentials=None):
+               wait=False, credentials=None, region=None):
         """
         Create a cluster
 
@@ -301,6 +302,7 @@ class Resource(resource.Resource):
                            Deprecated in favor of `credentials`
         :param wait: If `True`, wait for the cluster to become active before
                      returning
+        :param region: The region to create the cluster in
         :returns: :class:`~lavaclient.api.response.ClusterDetail`
         """
         if ssh_keys is None:
@@ -321,6 +323,9 @@ class Resource(resource.Resource):
             ssh_keys=ssh_keys,
             stack_id=stack_id
         )
+
+        if region:
+            data['region'] = region
 
         if node_groups:
             data.update(node_groups=self._gather_node_groups(node_groups))
@@ -579,6 +584,10 @@ class Resource(resource.Resource):
         connectors=argument(
             '--connector', action='append', type=parse_credential,
             help='Deprecated'),
+        cluster_region=argument(
+            '--cluster-region',
+            help='The region to create the cluster in'
+        ),
         wait=argument(
             action='store_true',
             help='Wait for the cluster to become active'
@@ -587,7 +596,7 @@ class Resource(resource.Resource):
     @display_table(ClusterDetail)
     def _create(self, name, stack_id, username=None, ssh_keys=None,
                 user_scripts=None, node_groups=None, connectors=None,
-                wait=False, credentials=None):
+                wait=False, credentials=None, cluster_region=None):
         """
         CLI-only; cluster create command
         """
@@ -603,7 +612,8 @@ class Resource(resource.Resource):
                                node_groups=node_groups,
                                connectors=connectors,
                                wait=wait,
-                               credentials=credentials)
+                               credentials=credentials,
+                               region=cluster_region)
         except error.RequestError as exc:
             if self._args.headless or not (
                     ssh_keys == [DEFAULT_SSH_KEY] and (
@@ -624,7 +634,8 @@ class Resource(resource.Resource):
                            node_groups=node_groups,
                            connectors=connectors,
                            wait=wait,
-                           credentials=credentials)
+                           credentials=credentials,
+                           region=cluster_region)
 
     @command(
         parser_options=dict(

@@ -99,6 +99,18 @@ def test_create_node_groups(args, node_groups, print_table,
     check_cluster_detail(print_single_table, print_table)
 
 
+@pytest.mark.parametrize('region', ['region-0', 'region-1'])
+def test_create_regions(mock_client, cluster_response, region):
+    mock_client._request.return_value = cluster_response
+    args = ['lava', 'clusters', 'create', 'name', 'stack_id',
+            '--cluster-region', region]
+    with patch('sys.argv', args):
+        main()
+
+    kwargs = mock_client._request.call_args[1]
+    assert kwargs['json']['cluster']['region'] == region
+
+
 @pytest.mark.parametrize('args,keys', [
     ([], [DEFAULT_SSH_KEY]),
     (['--ssh-key', 'key1'], ['key1']),
