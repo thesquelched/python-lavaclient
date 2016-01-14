@@ -628,19 +628,22 @@ class Resource(resource.Resource):
 
     @command(
         parser_options=dict(
-            description='Delete a cluster',
+            description='Delete one or more clusters',
         ),
+        cluster_ids=argument(nargs='+', metavar='<cluster ID>',
+                             help='Cluster ID'),
         force=argument(action='store_true',
                        help="Suppress delete confirmation dialog"),
     )
-    def _delete(self, cluster_id, force=False):
-        if not force:
-            display_result(self.get(cluster_id), ClusterDetail)
+    def _delete(self, cluster_ids, force=False):
+        for cluster_id in cluster_ids:
+            if not force:
+                display_result(self.get(cluster_id), ClusterDetail)
 
-            if not confirm('Delete this cluster?'):
-                return
+                if not confirm('Delete this cluster?'):
+                    continue
 
-        self.delete(cluster_id)
+            self.delete(cluster_id)
 
     def delete(self, cluster_id):
         """
