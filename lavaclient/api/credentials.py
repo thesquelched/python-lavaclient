@@ -441,16 +441,17 @@ class Resource(resource.Resource):
         return resp.ambari
 
     @command(
-        parser_options=dict(description='Delete an SSH key'),
-        name=argument(help='SSH key name'),
+        parser_options=dict(description='Delete one or more SSH keys'),
+        names=argument(nargs='+', metavar='<key name>', help='SSH key name'),
         do_confirm=argument('--force', action='store_false',
                             help='Suppress delete confirmation dialog'),
     )
-    def _delete_ssh_key(self, name, do_confirm=True):
-        if do_confirm and not confirm('Delete SSH key {0}?'.format(name)):
-            return
+    def _delete_ssh_key(self, names, do_confirm=True):
+        for name in names:
+            if do_confirm and not confirm('Delete SSH key {0}?'.format(name)):
+                continue
 
-        return self.delete_ssh_key(name)
+            self.delete_ssh_key(name)
 
     def delete_ssh_key(self, name):
         """
@@ -461,17 +462,21 @@ class Resource(resource.Resource):
         self._client._delete('credentials/ssh_keys/{0}'.format(name))
 
     @command(
-        parser_options=dict(description='Delete a Cloud Files credential'),
-        username=argument(help='Cloud Files username'),
+        parser_options=dict(
+            description='Delete one or more Cloud Files credentials'
+        ),
+        usernames=argument(nargs='+', metavar='<username>',
+                           help='Cloud Files username'),
         do_confirm=argument('--force', action='store_false',
                             help='Suppress delete confirmation dialog'),
     )
-    def _delete_cloud_files(self, username, do_confirm=True):
-        if do_confirm and not confirm(
-                'Delete Cloud Files username {0}?'.format(username)):
-            return
+    def _delete_cloud_files(self, usernames, do_confirm=True):
+        for username in usernames:
+            if do_confirm and not confirm(
+                    'Delete Cloud Files username {0}?'.format(username)):
+                continue
 
-        return self.delete_cloud_files(username)
+            self.delete_cloud_files(username)
 
     def delete_cloud_files(self, username):
         """
@@ -482,17 +487,21 @@ class Resource(resource.Resource):
         self._client._delete('credentials/cloud_files/{0}'.format(username))
 
     @command(
-        parser_options=dict(description='Delete Amazon S3 credential'),
-        access_key_id=argument(help='Amazon S3 access key id'),
+        parser_options=dict(
+            description='Delete one or more Amazon S3 credentials'
+        ),
+        access_key_ids=argument(nargs='+', metavar='<access key>',
+                                help='Amazon S3 access key id'),
         do_confirm=argument('--force', action='store_false',
                             help='Suppress delete confirmation dialog'),
     )
-    def _delete_s3(self, access_key_id, do_confirm=True):
-        if do_confirm and not confirm(
-                'Delete S3 access key {0}?'.format(access_key_id)):
-            return
+    def _delete_s3(self, access_key_ids, do_confirm=True):
+        for access_key_id in access_key_ids:
+            if do_confirm and not confirm(
+                    'Delete S3 access key {0}?'.format(access_key_id)):
+                continue
 
-        return self.delete_s3(access_key_id)
+            self.delete_s3(access_key_id)
 
     def delete_s3(self, access_key_id):
         """
@@ -503,17 +512,21 @@ class Resource(resource.Resource):
         self._client._delete('credentials/s3/{0}'.format(access_key_id))
 
     @command(
-        parser_options=dict(description='Delete Ambari credential'),
-        username=argument(help='Ambari username'),
+        parser_options=dict(
+            description='Delete one or more Ambari credentials'
+        ),
+        usernames=argument(nargs='+', metavar='<username>',
+                           help='Ambari username'),
         do_confirm=argument('--force', action='store_false',
                             help='Suppress delete confirmation dialog'),
     )
-    def _delete_ambari(self, username, do_confirm=True):
-        if do_confirm and not confirm(
-                'Delete Ambari user {0}?'.format(username)):
-            return
+    def _delete_ambari(self, usernames, do_confirm=True):
+        for username in usernames:
+            if do_confirm and not confirm(
+                    'Delete Ambari user {0}?'.format(username)):
+                continue
 
-        return self.delete_ambari(username)
+            self.delete_ambari(username)
 
     def delete_ambari(self, username):
         """

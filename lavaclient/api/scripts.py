@@ -160,15 +160,21 @@ class Resource(resource.Resource):
             wrapper='script')
 
     @command(
-        parser_options=dict(description='Delete a cluster script'),
+        parser_options=dict(
+            description='Delete one or more cluster scripts'
+        ),
+        script_ids=argument(nargs='+', metavar='<script ID>',
+                            help='Cluster script ID'),
         do_confirm=argument('--force', action='store_false',
                             help='Suppress delete confirmation dialog'),
     )
-    def _delete(self, script_id, do_confirm=True):
-        if do_confirm and not confirm('Delete script {0}?'.format(script_id)):
-            return
+    def _delete(self, script_ids, do_confirm=True):
+        for script_id in script_ids:
+            prompt = 'Delete script {0}?'.format(script_id)
+            if do_confirm and not confirm(prompt):
+                continue
 
-        return self.delete(script_id)
+            self.delete(script_id)
 
     def delete(self, script_id):
         """

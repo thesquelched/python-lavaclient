@@ -261,18 +261,21 @@ class Resource(resource.Resource):
             wrapper='stack')
 
     @command(
-        parser_options=dict(description='Delete a custom stack'),
+        parser_options=dict(description='Delete one or more custom stacks'),
+        stack_ids=argument(nargs='+', metavar='<stack ID>',
+                           help='Stack ID'),
         force=argument(action='store_true',
                        help='Do not show confirmation dialog'),
     )
-    def _delete(self, stack_id, force=False):
-        if not force:
-            display_result(self.get(stack_id), StackDetail)
+    def _delete(self, stack_ids, force=False):
+        for stack_id in stack_ids:
+            if not force:
+                display_result(self.get(stack_id), StackDetail)
 
-            if not confirm('Delete this stack?'):
-                return
+                if not confirm('Delete this stack?'):
+                    continue
 
-        self.delete(stack_id)
+            self.delete(stack_id)
 
     def delete(self, stack_id):
         """

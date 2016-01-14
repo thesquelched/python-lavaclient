@@ -2,6 +2,7 @@
 -----
 * CLI
     * Display cluster credentials in all calls that show cluster details
+    * All delete methods can delete multiple items
 
 0.3.0
 -----
