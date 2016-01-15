@@ -13,6 +13,7 @@ fi
 # Build package
 rm -rf build dist
 python setup.py sdist bdist_wheel
+python3 setup.py bdist_wheel || echo "Python 3 not supported"
 
 # Upload to PyPi
 twine upload -u rax_cbd_dev dist/*
