@@ -1,4 +1,3 @@
-from keystoneclient.exceptions import VersionNotAvailable
 from mock import patch, MagicMock
 import pytest
 
@@ -109,7 +108,7 @@ def auth_response_default():
     return auth_response
 
 
-@patch('keystoneclient.session.Session.post')
+@patch('requests.Session.post')
 def test_v2_endpoint(post, auth_response_w_versions):
     post.return_value = MagicMock(
         json=MagicMock(return_value=auth_response_w_versions)
@@ -120,20 +119,20 @@ def test_v2_endpoint(post, auth_response_w_versions):
     assert client.endpoint == 'publicURL/v2/tenantId'
 
 
-@patch('keystoneclient.session.Session.post')
+@patch('requests.Session.post')
 def test_default_endpoint(post, auth_response_default):
     post.return_value = MagicMock(
         json=MagicMock(return_value=auth_response_default)
     )
-    with pytest.raises(error.InvalidError):
+    with pytest.raises(error.AuthenticationError):
         Lava('username', 'DFW', api_key='apikey', tenant_id='tenantId')
 
 
-@patch('keystoneclient.session.Session.post')
+@patch('requests.Session.post')
 def test_incorrect_endpoint(post, auth_response_w_incorrect_version):
     post.return_value = MagicMock(
         json=MagicMock(return_value=auth_response_w_incorrect_version)
     )
 
-    with pytest.raises(VersionNotAvailable):
+    with pytest.raises(error.AuthenticationError):
         Lava('username', 'DFW', api_key='apikey')

@@ -12,7 +12,6 @@
 
 
 from setuptools import setup, find_packages
-import sys
 import os.path
 
 
@@ -21,19 +20,12 @@ CHANGELOG_PATH = os.path.join(
     'CHANGELOG.md')
 
 INSTALL_REQUIRES = [
-    'python-keystoneclient>=1.6.0',
-    'oslo.i18n>=1.7.0',
     'requests>=2.5.1',
     'six>=1.9.0',
     'python-dateutil>=2.4.2',
     'figgis>=1.6.2',
     'pysocks>=1.5.4',
 ]
-
-if sys.version_info < (3, 1):
-    INSTALL_REQUIRES.append('importlib>=1.0.3')
-if sys.version_info < (2, 7):
-    INSTALL_REQUIRES.append('oslo.config<3.1.0')
 
 
 def read_version():

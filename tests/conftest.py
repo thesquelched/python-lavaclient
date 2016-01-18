@@ -21,7 +21,7 @@ def lavaclient():
                 )
             )
         )
-        with patch.object(client.Lava, '_filter_current_endpoint') as endpoint:
+        with patch.object(client.Lava, '_get_endpoint') as endpoint:
             endpoint.return_value = 'v2'
             return client.Lava('username',
                                'region',
