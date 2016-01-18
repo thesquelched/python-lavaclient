@@ -23,15 +23,12 @@ from requests.packages.urllib3.util import retry as requests_retry
 from threading import Lock
 
 from lavaclient._version import __version__
-from lavaclient import keystone
-from lavaclient import util
 from lavaclient import constants
 from lavaclient import error
 from lavaclient.log import NullHandler
 from lavaclient.api import (clusters, limits, flavors, stacks, distros,
                             workloads, scripts, nodes, credentials)
-from keystoneclient import exceptions as ks_error
-from keystoneclient.i18n import _
+from lavaclient.identity import KeystoneAuth
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(NullHandler())
@@ -41,8 +38,8 @@ CURRENT_LAVA_VERSION = '2'
 
 class Lava(object):
     """
-    Lava(username, region=None, password=None, token=None, api_key=None, \
-auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
+    Lava(username, region=None, token=None, api_key=None, auth_url=None, \
+tenant_id=None, endpoint=None, verify_ssl=None)
 
     Cloud Big Data API client. Creating an instance will automatically attempt
     to authenticate.
@@ -51,7 +48,6 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
     :param region: Region identifier, e.g. 'DFW'
     :param api_key: API key string
     :param token: API token from previous authentication
-    :param password: Keystone auth password
     :param auth_url: Override Keystone authentication url; typically left at
                      the default
     :param tenant_id: Rackspace tenant ID
@@ -62,7 +58,6 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
     def __init__(self,
                  username,
                  region=None,
-                 password=None,
                  token=None,
                  api_key=None,
                  auth_url=None,
@@ -73,9 +68,8 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
                  max_retries=None,
                  retry_backoff=None,
                  _cli_args=None):
-        if not any((api_key, password, token)):
-            raise error.InvalidError("One of api_key, token, or password is "
-                                     "required")
+        if not (api_key or token):
+            raise error.InvalidError("One of api_key or token is required")
 
         if not endpoint and not region:
             raise error.InvalidError('One of endpoint or region is required')
@@ -91,11 +85,14 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
         self._auth_url = auth_url
         self._region = region
         self._api_key = api_key
-        self._password = password
         self._username = username
         self._tenant_id = tenant_id
         self._verify_ssl = verify_ssl
         self._token = token
+
+        self._adapter, self._session = self._make_session(max_retries,
+                                                          retry_backoff)
+        self._mount_url(auth_url)
 
         if token and not endpoint:
             raise error.InvalidError(
@@ -109,15 +106,13 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
             self._auth = self._authenticate(auth_url,
                                             api_key,
                                             region,
-                                            username,
-                                            password,
-                                            tenant_id)
+                                            username)
+
         if endpoint is None:
-            endpoint = self._get_endpoint(region, tenant_id)
+            endpoint = self._get_endpoint()
 
         self._endpoint = self._validate_endpoint(endpoint, tenant_id)
-        self._session = self._make_session(max_retries, retry_backoff,
-                                           auth_url, self._endpoint)
+        self._mount_url(self._endpoint)
 
         # Initialize API resources
         self.clusters = clusters.Resource(self, cli_args=_cli_args)
@@ -135,8 +130,20 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
 
         self._auth_lock = Lock()
 
-    def _make_session(self, max_retries, retry_backoff, auth_url,
-                      endpoint):
+    def _make_adapter(self, max_retries, retry_backoff):
+        return requests.adapters.HTTPAdapter(
+            max_retries=requests_retry.Retry(
+                total=max(0, max_retries),
+                backoff_factor=max(0, retry_backoff),
+                status_forcelist=set([503]),
+                method_whitelist=set(),
+            )
+        )
+
+    def _mount_url(self, url):
+        self._session.mount(url, self._adapter)
+
+    def _make_session(self, max_retries, retry_backoff):
         """Create requests session that retries on connection failures"""
         if max_retries is None:
             max_retries = constants.DEFAULT_RETRIES
@@ -156,11 +163,7 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
             )
         )
 
-        # Retries for authentication and API requests
-        session.mount(auth_url, adapter)
-        session.mount(endpoint, adapter)
-
-        return session
+        return adapter, session
 
     def _validate_endpoint(self, endpoint, tenant_id):
         """Validate that the endpoint ends with v2/<tenant_id>"""
@@ -180,104 +183,19 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
 
         raise error.InvalidError('Endpoint must end with v2 or v2/<tenant_id>')
 
-    def _throw_endpoint_error(self, endpoint_type, service_name,
-                              region_name, service_type):
-
-        MSG = '{endpoint_type}s endpoint for {service_type}s service '
-
-        if service_name and region_name:
-            msg = MSG + ('named {service_name}s in {region_name}s '
-                         'region not found'
-                         ).format(endpoint_type=endpoint_type,
-                                  service_type=service_type,
-                                  service_name=service_name,
-                                  region_name=region_name)
-        elif service_name:
-            msg = MSG + 'named {service_name}s not found'.format(
-                endpoint_type=endpoint_type, service_type=service_type,
-                service_name=service_name)
-        elif region_name:
-            msg = MSG + 'in (region_name)s region not found'.format(
-                endpoint_type=endpoint_type, service_type=service_type,
-                region_name=region_name)
-        else:
-            msg = MSG + 'not found'.format(endpoint_type=endpoint_type,
-                                           service_type=service_type)
-        raise ks_error.EndpointNotFound(_(msg))
-
-    def _filter_current_endpoint(self, service_catalog, service_type,
-                                 region_name, service_name,
-                                 endpoint_type='publicURL',
-                                 filter_attr=None,
-                                 filter_value=None):
-        """
-            Helper method to filter latest version of cloudBigData public URL
-            By default choose public URL available if no versioning
-            otherwise filter specific version.
-        """
-        current_lava_url = None
-        sc_endpoints = service_catalog.get_endpoints(
-            service_type=service_type, endpoint_type=endpoint_type,
-            region_name=region_name, service_name=service_name)
-        if not sc_endpoints.get(service_type, []):
-            sc_endpoints = {}
-        if service_type not in sc_endpoints:
-            self._throw_endpoint_error(endpoint_type, service_name,
-                                       region_name, service_type)
-        endpoints = sc_endpoints.get(service_type)
-        if filter_attr:
-            endpoints = [endpoint
-                         for endpoint in endpoints
-                         if endpoint.get(filter_attr) == filter_value]
-        fallback_url = None
-        for endpoint in endpoints:
-            version_id = endpoint.get('versionId')
-            if version_id is None:
-                fallback_url = endpoint[endpoint_type]
-            elif version_id == CURRENT_LAVA_VERSION:
-                current_lava_url = endpoint[endpoint_type]
-        if not (current_lava_url or fallback_url):
-            raise ks_error.VersionNotAvailable(
-                'Unable to find version V{0} for the bigdata '
-                'endpoint'.format(CURRENT_LAVA_VERSION))
-        return current_lava_url or fallback_url
-
-    def _get_endpoint(self, region, tenant_id):
-        filters = dict(
-            service_type=constants.CBD_SERVICE_TYPE,
-            region_name=region.upper(),
-            service_name=constants.CBD_SERVICE_NAME)
-
-        if tenant_id:
-            filters.update(filter_attr='tenantId', filter_value=tenant_id)
-
-        try:
-            return self._filter_current_endpoint(self._auth.service_catalog,
-                                                 **filters)
-        except ks_error.EndpointNotFound as exc:
-            LOG.critical('Error getting endpoint: {0}'.format(exc),
-                         exc_info=exc)
-            raise error.InvalidError(str(exc))
-
-    def _authenticate(self, auth_url, api_key, region, username, password,
-                      tenant_id):
-        """Return keystone authentication client"""
-        try:
-            return keystone.Client(
-                auth_url=util.strip_url(auth_url),
-                api_key=api_key,
-                password=password,
-                region=region,
-                username=username,
-                tenant_id=tenant_id)
-        except ks_error.AuthorizationFailure as exc:
-            LOG.critical('Unable to authenticate', exc_info=exc)
+    def _get_endpoint(self):
+        endpoint = self._auth.endpoint
+        if endpoint is None:
             raise error.AuthenticationError(
-                'Authentication error: {0}'.format(exc))
-        except ks_error.Unauthorized as exc:
-            LOG.critical('Authorization error', exc_info=exc)
-            raise error.AuthorizationError(
-                'Authorization error: {0}'.format(exc))
+                'No valid endpoint was returned from the service catalog')
+
+        return endpoint
+
+    def _authenticate(self, auth_url, api_key, region, username):
+        """Return keystone authentication client"""
+        auth = KeystoneAuth(username, api_key=api_key, region=region,
+                            auth_url=auth_url)
+        return auth.authenticate(self._session)
 
     def reauthenticate(self):
         """Reauthenticate with keystone, assuming our token is no longer
@@ -293,9 +211,7 @@ auth_url=None, tenant_id=None, endpoint=None, verify_ssl=None)
             self._auth = self._authenticate(self._auth_url,
                                             self._api_key,
                                             self._region,
-                                            self._username,
-                                            self._password,
-                                            self._tenant_id)
+                                            self._username)
 
             if self.token == old_token:
                 LOG.warn('Reauthentication produced the same token')

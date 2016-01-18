@@ -70,7 +70,8 @@ def test_shell(mock_ipython):
 
 
 def test_create_client_shell(mock_ipython):
-    args = MagicMock(resource='shell', retries=None, retry_backoff=None)
+    args = MagicMock(resource='shell', retries=None, retry_backoff=None,
+                     token='token')
     client = create_client(args)
 
     assert not client.clusters._command_line

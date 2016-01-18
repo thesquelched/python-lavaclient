@@ -49,24 +49,16 @@ def create_client(args):
                         os.environ.get('LAVA_USERNAME'),
                         os.environ.get('OS_USERNAME'),
                         getpass.getuser())
-    password = first_exists(args.password,
-                            os.environ.get('LAVA_PASSWORD'),
-                            os.environ.get('OS_PASSWORD'))
 
-    if not any((apikey, token, password)):
-        if args.headless:
-            six.print_('Error: no API key, token, or password specified',
-                       file=sys.stderr)
-            sys.exit(1)
-        else:
-            password = getpass.getpass('Password for {0}: '.format(user))
+    if not (apikey or token):
+        six.print_('Error: no API key or token', file=sys.stderr)
+        sys.exit(1)
 
     try:
         return Lava(
             user,
             api_key=apikey,
             token=token,
-            password=password,
             tenant_id=first_exists(args.tenant,
                                    os.environ.get('LAVA_TENANT_NAME'),
                                    os.environ.get('OS_TENANT_NAME')),
@@ -191,6 +183,7 @@ def initialize_logging(args):  # pragma: nocover
                 import httplib as http_client
 
             http_client.HTTPConnection.debuglevel = 1
+
     try:
         logging.captureWarnings(True)
     except AttributeError:
@@ -270,8 +263,6 @@ def parse_argv():
                              help='Do not request user input')
         general.add_argument('--user',
                              help='Keystone auth username')
-        general.add_argument('--password',
-                             help='Keystone auth password')
         general.add_argument('--insecure', '-k', action='store_false',
                              dest='verify_ssl',
                              help='Turn of SSL cert validation')

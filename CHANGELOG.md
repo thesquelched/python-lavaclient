@@ -1,3 +1,7 @@
+0.3.3
+-----
+* Remove keystoneclient dependency
+
 0.3.2
 -----
 * Fix packaging issue
