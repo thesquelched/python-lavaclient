@@ -1,3 +1,7 @@
+0.3.4
+-----
+* Add missing prettytable dependency
+
 0.3.3
 -----
 * Remove keystoneclient dependency

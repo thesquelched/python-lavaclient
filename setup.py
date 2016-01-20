@@ -25,6 +25,7 @@ INSTALL_REQUIRES = [
     'python-dateutil>=2.4.2',
     'figgis>=1.6.2',
     'pysocks>=1.5.4',
+    'prettytable>=0.7.2',
 ]
 
 
