@@ -177,10 +177,10 @@ class ClusterCredentialsRemovalRequest(Config):
 def parse_node_group(value):
     """Parse command-line node group string, e.g.
     `slave(count=1, flavor_id=hadoop1-7)`"""
-    var_rgx = r'(?:[a-zA-Z-]\w*)'
+    var_rgx = r'(?:[a-zA-Z_]\w*)'
     expr_rgx = r'(?:{var}\s*=\s*.*?)'.format(var=var_rgx)
-    node_group_rgx = r'({var})(?:\(({expr}?(?:\s*,\s*{expr})*)\))?$'.format(
-        var=var_rgx, expr=expr_rgx)
+    node_group_rgx = r'([^()]+)(?:\(({expr}?(?:\s*,\s*{expr})*)\))?$'.format(
+        expr=expr_rgx)
 
     match = re.match(node_group_rgx, value)
     if match is None:
