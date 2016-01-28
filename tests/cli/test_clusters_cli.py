@@ -9,7 +9,7 @@ from contextlib import contextmanager
 
 from lavaclient.cli import main
 from lavaclient.api.response import Cluster, ClusterDetail, NodeGroup, Node
-from lavaclient.api.clusters import DEFAULT_SSH_KEY
+from lavaclient.api.clusters import DEFAULT_SSH_KEY, parse_node_group
 from lavaclient.error import RequestError
 
 
@@ -40,6 +40,19 @@ def check_cluster_detail(print_single_table, print_table):
     assert list(data) == [['script_id', 'name', 'status']]
     assert header == ['ID', 'Name', 'Status']
     assert kwargs['title'] == 'Scripts'
+
+
+@pytest.mark.parametrize('group', [
+    'foo(count=1)',
+    'foo123(count=1)',
+    'foo-bar(count=1)',
+    'foo-1(count=1)',
+    'foo_bar(count=1)',
+    '190efgkln235u90erty901234124(count=1)',
+])
+def test_parse_node_group(group):
+    result = parse_node_group(group)
+    assert result == {'id': group.split('(', 1)[0], 'count': '1'}
 
 
 @patch('sys.argv', ['lava', 'clusters', 'list'])

@@ -1,3 +1,9 @@
+0.3.5
+-----
+* CLI
+    * In commands that require specifying a node group ID, the validation
+      regex is more lenient
+
 0.3.4
 -----
 * Add missing prettytable dependency
