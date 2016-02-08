@@ -1,3 +1,8 @@
+0.3.6
+____
+* CLI
+    * Add --cluster-region to `clusters create`
+
 0.3.5
 -----
 * CLI

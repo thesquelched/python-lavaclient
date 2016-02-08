@@ -713,8 +713,7 @@ def ssh_to_host(username, host, ssh_command=None, command=None):
         output = None
 
     if returncode:
-        msg = 'Command returned non-zero status code {0}'.format(
-            proc.returncode)
+        msg = 'Command returned non-zero status code {0}'.format(returncode)
         LOG.error(msg)
         LOG.debug('Command output:\n%s', output)
 
