@@ -106,9 +106,11 @@ def distro_response(distro_detail):
 @pytest.fixture
 def cluster_script():
     return {
-        'id': 'script_id',
+        'id': 'id',
         'name': 'name',
         'status': 'status',
+        'script_id': 'script_id',
+        'node_id': 'node_id',
     }
 
 

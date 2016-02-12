@@ -194,9 +194,13 @@ class NodeGroup(Config, ReprMixin):
     components = ListField(dict, default={})
 
 
-class ClusterScript(Config, ReprMixin):
+class NodeScript(Config, ReprMixin):
 
-    id = Field(six.text_type, required=True)
+    table_columns = ('id', 'name', 'node_id', 'status')
+    table_header = ('ID', 'Name', 'Node ID', 'Status')
+
+    id = Field(six.text_type, required=True, key='script_id')
+    node_id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
     status = Field(six.text_type, required=True)
 
@@ -313,8 +317,8 @@ class ClusterDetail(Config, ReprMixin, BaseCluster):
     node_groups = ListField(NodeGroup, required=True,
                             help='See: :class:`NodeGroup`')
     username = Field(six.text_type, required=True)
-    scripts = ListField(ClusterScript, required=True,
-                        help='See: :class:`ClusterScript`')
+    scripts = ListField(NodeScript, required=True,
+                        help='See: :class:`NodeScript`')
     progress = Field(float, required=True)
     credentials = Field(parse_cluster_credentials, required=True)
 
@@ -342,7 +346,7 @@ class ClusterDetail(Config, ReprMixin, BaseCluster):
 
         if self.scripts:
             six.print_()
-            display_result(self.scripts, ClusterScript, title='Scripts')
+            display_result(self.scripts, NodeScript, title='Scripts')
 
 
 class Flavor(Config, ReprMixin):

@@ -42,7 +42,7 @@ after the cluster finishes booting up::
             user_scripts=[script.id],
             wait=True)
     >>> cluster.scripts
-    [ClusterScript(id='ef210ae9-7827-4c92-8caf-8c575033b89a', name='create_users', status)]
+    [NodeScript(id='ef210ae9-7827-4c92-8caf-8c575033b89a', name='create_users', node_id, status)]
 
     >>> cluster.scripts[0].status
     'ACTIVE'
@@ -66,7 +66,7 @@ API Reference
    :inherited-members:
    :member-order: groupwise
 
-.. autoclass:: ClusterScript()
+.. autoclass:: NodeScript()
    :members:
    :inherited-members:
    :member-order: groupwise

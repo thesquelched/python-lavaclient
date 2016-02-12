@@ -1,3 +1,7 @@
+0.3.7
+-----
+* Add support for user script status on individual nodes
+
 0.3.6
 -----
 * CLI
