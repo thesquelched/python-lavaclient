@@ -37,8 +37,8 @@ def check_cluster_detail(print_single_table, print_table):
     assert kwargs['title'] == 'Node Groups'
 
     (data, header), kwargs = print_table.call_args_list[2]
-    assert list(data) == [['script_id', 'name', 'status']]
-    assert header == ['ID', 'Name', 'Status']
+    assert list(data) == [['script_id', 'name', 'node_id', 'status']]
+    assert header == ('ID', 'Name', 'Node ID', 'Status')
     assert kwargs['title'] == 'Scripts'
 
 
