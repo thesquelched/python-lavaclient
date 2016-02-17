@@ -352,7 +352,7 @@ class ClusterDetail(Config, ReprMixin, BaseCluster):
 class Flavor(Config, ReprMixin):
 
     table_columns = ('id', 'name', 'ram', 'vcpus', 'disk')
-    table_header = ('ID', 'Name', 'RAM', 'VCPUs', 'Disk')
+    table_header = ('ID', 'Name', 'RAM (MB)', 'VCPUs', 'Disk (GB)')
 
     id = Field(six.text_type, required=True)
     name = Field(six.text_type, required=True)
