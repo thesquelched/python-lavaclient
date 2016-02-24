@@ -1,3 +1,7 @@
+0.3.8
+-----
+* Validate cluster usernames
+
 0.3.7
 -----
 * CLI

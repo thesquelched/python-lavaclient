@@ -51,6 +51,7 @@ IN_PROGRESS_STATES = frozenset([
     'RESIZING', 'WAITING'])
 FINAL_STATES = frozenset(['ACTIVE', 'ERROR', 'IMPAIRED'])
 INVALID_USERNAMES = frozenset(['root'])
+USERNAME_REGEX = re.compile(r'^[a-zA-Z_][\w-]{0,31}$')
 
 DEFAULT_SSH_KEY = '{0}@{1}'.format(getuser(), socket.gethostname())
 DEFAULT_SSH_PUBKEY = os.path.join('$HOME', '.ssh', 'id_rsa.pub')
@@ -124,7 +125,12 @@ class ClusterCreateCredential(Config):
 
 def valid_username(value):
     if value.lower() in INVALID_USERNAMES:
-        raise ValidationError('Invalid username: {0}'.format(value))
+        raise ValidationError('Reserved username: {0}'.format(value))
+    elif not USERNAME_REGEX.match(value):
+        raise ValidationError(
+            'Invalid username; must be 32 characters or less, only include '
+            'letters, numbers, hyphens, and underscores, and must start with '
+            'a letter or underscore')
 
     return True
 

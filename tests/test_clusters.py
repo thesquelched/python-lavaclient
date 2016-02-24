@@ -21,6 +21,31 @@ def test_api_get(lavaclient, cluster_response):
         assert isinstance(resp, response.ClusterDetail)
 
 
+@pytest.mark.parametrize('username', [
+    'user',
+    'UPPER_CASE',
+    'has-dashes',
+    'some123numbers',
+])
+def test_valid_username(username, lavaclient, cluster_response):
+    with patch.object(lavaclient, '_request') as request:
+        request.return_value = cluster_response
+        resp = lavaclient.clusters.create(
+            'cluster_name', 'stack_id')
+        assert isinstance(resp, response.ClusterDetail)
+
+
+@pytest.mark.parametrize('username', [
+    'no spaces',
+    'thisusernameislongerthanthirtytwocharacters',
+    '1startswithnumber',
+    'invalid**characters',
+])
+def test_invalid_username(username, lavaclient):
+    pytest.raises(error.InvalidError, lavaclient.clusters.create,
+                  'cluster_name', 'stack_id', username=username)
+
+
 def test_api_create(lavaclient, cluster_response):
     with patch.object(lavaclient, '_request') as request:
         request.return_value = cluster_response
