@@ -344,6 +344,11 @@ def node(link_response):
 
 
 @pytest.fixture
+def node_response(node):
+    return {'node': node}
+
+
+@pytest.fixture
 def nodes_response(node):
     return {'nodes': [node]}
 

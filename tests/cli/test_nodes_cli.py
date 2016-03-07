@@ -1,4 +1,4 @@
-from mock import patch, call
+from mock import MagicMock, patch, call
 
 from lavaclient.cli import main
 from lavaclient.api.response import Node
@@ -35,3 +35,16 @@ def test_list_noformat(sixprint, mock_client, nodes_response):
     sixprint.assert_has_calls([
         call('node_id,NODENAME,node_group,ACTIVE,1.2.3.4,5.6.7.8')
     ])
+
+
+@patch('sys.argv', ['lava', 'nodes', 'delete', 'cluster_id', 'node_id'])
+@patch('lavaclient.api.nodes.confirm', MagicMock(return_value=True))
+def test_delete(mock_client, node_response):
+    mock_client._request.return_value = node_response
+
+    main()
+
+    assert mock_client._request.call_count == 1
+
+    call1 = mock_client._request.call_args
+    assert call1 == call('DELETE', 'clusters/cluster_id/nodes/node_id')

@@ -5,7 +5,7 @@ from figgis import Config, ListField
 from lavaclient.api import resource
 from lavaclient import constants
 from lavaclient.api.response import Node
-from lavaclient.util import command, display, CommandLine
+from lavaclient.util import argument, command, confirm, display, CommandLine
 
 LOG = logging.getLogger(constants.LOGGER_NAME)
 
@@ -43,3 +43,27 @@ class Resource(resource.Resource):
             self._client._get('clusters/{0}/nodes'.format(cluster_id)),
             NodesResponse,
             wrapper='nodes')
+
+    @command(
+        parser_options=dict(
+            description='Delete the specified node in a cluster'
+        ),
+        force=argument(action='store_true',
+                       help="Suppress delete confirmation dialog")
+    )
+    def _delete(self, cluster_id, node_id, force=False):
+        if not force and not confirm('Delete this node?'):
+            return
+
+        self.delete(cluster_id, node_id)
+
+    def delete(self, cluster_id, node_id):
+        """
+        Delete the node with node_id belonging to the cluster
+
+        :param cluster_id:
+        :param node_id:
+        :return: None
+        """
+        self._client._delete('clusters/{0}/nodes/{1}'.format(cluster_id,
+                                                             node_id))
